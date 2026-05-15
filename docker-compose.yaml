@@ -4,25 +4,22 @@ services:
     container_name: shipping-confirm
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:3000"
+      - "127.0.0.1:${HOST_PORT}:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - SQLITE_PATH=/app/data/shipping.db
-      - MSSQL_SERVER=SUZVPRINT01\CUSTOMSSYS
-      - MSSQL_DATABASE=csi_datawarehouse
-      - MSSQL_USER=naipowerbiuser
-      - MSSQL_PASSWORD=LT8QGjMn8XwAjp
-      - MSSQL_PORT=1433
+      - SQLITE_PATH=${SQLITE_PATH}
+      - MSSQL_SERVER=${MSSQL_SERVER}
+      - MSSQL_DATABASE=${MSSQL_DATABASE}
+      - MSSQL_USER=${MSSQL_USER}
+      - MSSQL_PASSWORD=${MSSQL_PASSWORD}
+      - MSSQL_PORT=${MSSQL_PORT}
     volumes:
-      - shipping-data:/app/data
+      - ${DATA_DIR}:/app/data
     extra_hosts:
       - "SUZVPRINT01:10.0.6.72"
     networks:
       - public-net
-
-volumes:
-  shipping-data:
 
 networks:
   public-net:
