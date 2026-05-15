@@ -1,0 +1,27 @@
+services:
+  shipping-confirm:
+    build: .
+    container_name: shipping-confirm
+    restart: unless-stopped
+    ports:
+      - "8080:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - SQLITE_PATH=/app/data/shipping.db
+      - MSSQL_SERVER=SUZVPRINT01\CUSTOMSSYS
+      - MSSQL_DATABASE=csi_datawarehouse
+      - MSSQL_USER=naipowerbiuser
+      - MSSQL_PASSWORD=LT8QGjMn8XwAjp
+      - MSSQL_PORT=1433
+    volumes:
+      - shipping-data:/app/data
+    networks:
+      - public-net
+
+volumes:
+  shipping-data:
+
+networks:
+  public-net:
+    external: true

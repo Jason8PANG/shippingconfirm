@@ -1,0 +1,547 @@
+<div id="app" x-data="historyApp()" x-init="init()">
+  
+  <!-- 顶部导航 -->
+  <header class="header">
+    <h1>📋 <span x-text="t('siteTitle')"></span></h1>
+    <nav>
+      <!-- 站点选择器 -->
+      <select x-model="currentSite" @change="onSiteChange()" class="nav-btn site-select">
+        <option value="">All Sites</option>
+        <option value="410">Site 410</option>
+        <option value="310">Site 310</option>
+        <option value="330">Site 330</option>
+      </select>
+      <a href="/" class="nav-btn"><span x-text="t('navScan')"></span></a>
+      <a href="/history" class="nav-btn nav-active"><span x-text="t('navHistory')"></span></a>
+      <a href="#" @click.prevent="toggleLang()" class="nav-btn lang-btn">
+        <span x-text="lang === 'en' ? '🇨🇳 中文' : '🇬🇧 English'"></span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- 查询条件 -->
+  <section class="section">
+    <div class="form-row">
+      <input type="date" x-model="startDate" @change="loadHistory()">
+      <span class="date-sep" x-text="t('to')"></span>
+      <input type="date" x-model="endDate" @change="loadHistory()">
+    </div>
+    <div class="form-row" style="margin-top: 0.5rem;">
+      <input type="text" x-model="searchPickListId" 
+             :placeholder="t('searchPickListId')" 
+             @keyup.enter="loadHistory()" 
+             class="search-input">
+      <input type="text" x-model="searchCustomer" 
+             :placeholder="t('searchCustomer')" 
+             @keyup.enter="loadHistory()" 
+             class="search-input">
+      <button @click="loadHistory()" :disabled="loading">
+        <span x-show="!loading" x-text="t('searchBtn')"></span>
+        <span x-show="loading" x-text="t('searching')"></span>
+      </button>
+    </div>
+  </section>
+
+  <!-- 记录列表 -->
+  <section class="section">
+    <div class="loading" x-show="loading" x-text="t('loading')"></div>
+    
+    <div class="empty" x-show="!loading && records.length === 0" x-text="t('noRecords')"></div>
+
+    <div class="record-list" x-show="!loading && records.length > 0">
+      <template x-for="(record, idx) in records" :key="idx">
+        <div class="record-card" @click="showDetail(record.id)">
+          <div class="record-header">
+            <div class="record-title">
+              PickList #<span x-text="record.pick_list_id"></span>
+            </div>
+            <span class="record-status" :class="record.status">
+              <template x-if="record.status === 'confirmed'" x-text="t('done')"></template>
+              <template x-if="record.status === 'in_progress'" x-text="t('inProgress')"></template>
+              <template x-if="record.status === 'pending'" x-text="t('pending')"></template>
+            </span>
+          </div>
+          <div class="record-meta">
+            <span class="site-badge" x-text="record.site_ref"></span>
+            <span x-text="record.cust_name"></span>
+          </div>
+          <div class="record-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" 
+                   :style="'width: ' + (record.total_cartons > 0 ? (record.scanned_boxes / record.total_cartons * 100) : 0) + '%'"></div>
+            </div>
+            <span class="record-progress-text">
+              <span x-text="record.scanned_boxes"></span>/<span x-text="record.total_cartons"></span> <span x-text="t('cartons')"></span> | 
+              <span x-text="t('operator')"></span>: <span x-text="record.operator"></span>
+            </span>
+          </div>
+          <div class="record-time">
+            <span><span x-text="t('created')"></span>: <span x-text="record.created_at"></span></span>
+            <span x-show="record.completed_at"><span x-text="t('completed')"></span>: <span x-text="record.completed_at"></span></span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- 详情弹窗 -->
+  <div class="modal" x-show="showDetailModal" x-cloak @click.self="showDetailModal = false">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 x-text="t('detailTitle')"></h3>
+        <button @click="showDetailModal = false">✕</button>
+      </div>
+
+      <div class="modal-body" x-show="detail">
+        <div class="detail-section">
+          <h4 x-text="t('basicInfo')"></h4>
+          <div class="detail-grid">
+            <div><strong x-text="t('id')"></strong>: <span x-text="detail?.confirmation?.pick_list_id"></span></div>
+            <div><strong x-text="t('site')"></strong>: <span x-text="detail?.confirmation?.site_ref"></span></div>
+            <div><strong x-text="t('customer')"></strong>: <span x-text="detail?.confirmation?.cust_name"></span></div>
+            <div><strong x-text="t('shipMethod')"></strong>: <span x-text="detail?.confirmation?.ship_code"></span></div>
+            <div><strong x-text="t('totalCartons')"></strong>: <span x-text="detail?.confirmation?.total_cartons"></span> <span x-text="t('cartons')"></span></div>
+            <div><strong x-text="t('status')"></strong>: 
+              <span class="record-status" :class="detail?.confirmation?.status">
+                <template x-if="detail?.confirmation?.status === 'confirmed'" x-text="t('done')"></template>
+                <template x-if="detail?.confirmation?.status === 'in_progress'" x-text="t('inProgress')"></template>
+              </span>
+            </div>
+            <div><strong x-text="t('operator')"></strong>: <span x-text="detail?.confirmation?.operator"></span></div>
+            <div><strong x-text="t('completedTime')"></strong>: <span x-text="detail?.confirmation?.completed_at"></span></div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4 x-text="t('itemsTitle')"></h4>
+          <table class="detail-table" x-show="detail?.items?.length > 0">
+            <thead>
+              <tr>
+                <th x-text="t('colSeq')"></th>
+                <th x-text="t('colPartNo')"></th>
+                <th x-text="t('colPartName')"></th>
+                <th x-text="t('plannedCartons')"></th>
+                <th x-text="t('scannedCartons')"></th>
+                <th x-text="t('status')"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="(item, idx) in detail?.items" :key="idx">
+                <tr>
+                  <td x-text="item.sequence"></td>
+                  <td class="code-cell" x-text="item.item_code"></td>
+                  <td x-text="item.item_name"></td>
+                  <td><span x-text="item.planned_boxes"></span> <span x-text="t('cartons')"></span></td>
+                  <td><span x-text="item.scanned_boxes"></span> <span x-text="t('cartons')"></span></td>
+                  <td>
+                    <span class="item-badge" :class="item.status === 'completed' ? 'badge-done' : 'badge-active'" x-text="item.status"></span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="detail-section">
+          <h4 x-text="t('scanLogs')"></h4>
+          <div class="log-list" x-show="detail?.logs?.length > 0">
+            <table class="log-table">
+              <thead>
+                <tr>
+                  <th x-text="t('time')"></th>
+                  <th x-text="t('colPartNo')"></th>
+                  <th x-text="t('wo')"></th>
+                  <th x-text="t('boxNo')"></th>
+                  <th x-text="t('result')"></th>
+                  <th x-text="t('errorMsg')"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="(log, idx) in detail?.logs?.slice(0, 50)" :key="idx">
+                  <tr :class="log.scan_result === 'failed' ? 'log-fail' : 'log-ok'">
+                    <td x-text="log.scanned_at"></td>
+                    <td class="code-cell" x-text="log.cust_pn || '-'"></td>
+                    <td class="code-cell" x-text="log.wo_number || '-'"></td>
+                    <td>
+                      <template x-if="log.box_num">
+                        <span x-text="log.box_num + '/' + log.total_boxes"></span>
+                      </template>
+                      <template x-if="!log.box_num" x-text="t('singleCarton')"></template>
+                    </td>
+                    <td><span class="log-status" x-text="log.scan_result === 'success' ? '✅' : '❌'"></span></td>
+                    <td x-text="log.error_message || ''" class="log-error-cell"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div class="empty" x-show="!detail?.logs?.length" x-text="t('noScanLogs')"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>
+<script>
+const translations = {
+  en: {
+    siteTitle: 'Shipping Confirmation Records',
+    navScan: 'Scan',
+    navHistory: 'History',
+    allSites: 'All Sites',
+    to: 'to',
+    searchBtn: '🔍 Search',
+    searching: '⏳ Searching...',
+    searchPickListId: 'PickList ID...',
+    searchCustomer: 'Customer name...',
+    loading: 'Loading...',
+    noRecords: 'No records found',
+    done: '✅ Completed',
+    inProgress: '⏳ In Progress',
+    pending: '⏸️ Pending',
+    cartons: 'cartons',
+    operator: 'Operator',
+    created: 'Created',
+    completed: 'Completed',
+    detailTitle: 'Confirmation Details',
+    basicInfo: 'Basic Info',
+    id: 'ID',
+    site: 'Site',
+    customer: 'Customer',
+    shipMethod: 'Ship Method',
+    totalCartons: 'Total Cartons',
+    status: 'Status',
+    completedTime: 'Completed At',
+    itemsTitle: 'Items',
+    colSeq: 'Seq',
+    colPartNo: 'Part No',
+    colPartName: 'Part Name',
+    plannedCartons: 'Planned',
+    scannedCartons: 'Scanned',
+    scanLogs: 'Scan Logs',
+    time: 'Time',
+    wo: 'WO',
+    boxNo: 'Box#',
+    result: 'Result',
+    errorMsg: 'Error',
+    singleCarton: 'Single carton',
+    noScanLogs: 'No scan records',
+  },
+  zh: {
+    siteTitle: '出货确认记录',
+    navScan: '扫码确认',
+    navHistory: '历史记录',
+    allSites: '全部站点',
+    to: '至',
+    searchBtn: '🔍 查询',
+    searching: '⏳ 查询中...',
+    searchPickListId: 'PickList 编号...',
+    searchCustomer: '客户名称...',
+    loading: '加载中...',
+    noRecords: '暂无记录',
+    done: '✅ 已完成',
+    inProgress: '⏳ 进行中',
+    pending: '⏸️ 待确认',
+    cartons: '箱',
+    operator: '操作',
+    created: '创建',
+    completed: '完成',
+    detailTitle: '出货确认详情',
+    basicInfo: '基本信息',
+    id: '编号',
+    site: '站点',
+    customer: '客户',
+    shipMethod: '出货方式',
+    totalCartons: '总箱数',
+    status: '状态',
+    completedTime: '完成时间',
+    itemsTitle: '品项明细',
+    colSeq: '序号',
+    colPartNo: '品号',
+    colPartName: '品名',
+    plannedCartons: '计划箱数',
+    scannedCartons: '已扫箱数',
+    scanLogs: '扫码日志',
+    time: '时间',
+    wo: '工单',
+    boxNo: '箱号',
+    result: '结果',
+    errorMsg: '错误信息',
+    singleCarton: '单箱',
+    noScanLogs: '暂无扫码记录',
+  },
+};
+
+function historyApp() {
+  return {
+    lang: 'en',
+    t(key) { return translations[this.lang]?.[key] || translations.en[key] || key; },
+    toggleLang() { this.lang = this.lang === 'en' ? 'zh' : 'en'; localStorage.setItem('shippingLang', this.lang); },
+
+    loading: false,
+    records: [],
+    startDate: '',
+    endDate: '',
+    searchPickListId: '',
+    searchCustomer: '',
+    currentSite: '',
+    showDetailModal: false,
+    detail: null,
+
+    init() {
+      const saved = localStorage.getItem('shippingLang');
+      if (saved === 'zh') this.lang = 'zh';
+      const savedSite = localStorage.getItem('shippingSite');
+      if (savedSite) this.currentSite = savedSite;
+      const today = new Date();
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      this.startDate = weekAgo.toISOString().split('T')[0];
+      this.endDate = today.toISOString().split('T')[0];
+      this.loadHistory();
+    },
+
+    onSiteChange() {
+      localStorage.setItem('shippingSite', this.currentSite);
+      this.loadHistory();
+    },
+
+    async loadHistory() {
+      this.loading = true;
+      try {
+        const params = new URLSearchParams();
+        if (this.startDate) params.set('startDate', this.startDate);
+        if (this.endDate) params.set('endDate', this.endDate);
+        if (this.searchPickListId.trim()) params.set('pickListId', this.searchPickListId.trim());
+        if (this.searchCustomer.trim()) params.set('customer', this.searchCustomer.trim());
+        if (this.currentSite) params.set('siteRef', this.currentSite);
+        const url = `/api/history?${params.toString()}`;
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json.success) this.records = json.data;
+      } catch (err) {
+        console.error('Failed to load records:', err);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async showDetail(id) {
+      try {
+        const res = await fetch(`/api/history/${id}`);
+        const json = await res.json();
+        if (json.success) {
+          this.detail = json.data;
+          this.showDetailModal = true;
+        }
+      } catch (err) {
+        console.error('Failed to load detail:', err);
+      }
+    },
+  };
+}
+</script>
+
+<style>
+/* ---- 全局 ---- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #f0f2f5; color: #1a1a2e; font-size: 16px; line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+}
+[x-cloak] { display: none !important; }
+
+/* ---- 顶部导航 ---- */
+.header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white; padding: 1rem;
+  display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  position: sticky; top: 0; z-index: 100;
+}
+.header h1 { font-size: 1.2rem; font-weight: 600; }
+.header nav {
+  display: flex; gap: 0.3rem; align-items: center;
+}
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 0.8rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  text-decoration: none;
+  color: rgba(255,255,255,0.7);
+  box-sizing: border-box;
+  line-height: 1;
+}
+.nav-btn:hover,
+.nav-btn.nav-active { color: white; background: rgba(255,255,255,0.2); }
+.lang-btn {
+  background: rgba(255,255,255,0.15) !important;
+  border: 1px solid rgba(255,255,255,0.3) !important;
+  font-weight: 600; cursor: pointer;
+}
+.site-select {
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 6px;
+  height: 34px;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  line-height: 1;
+  box-sizing: border-box;
+}
+.site-select option {
+  background: #1a1a2e;
+  color: white;
+}
+
+/* ---- 区块 ---- */
+.section { max-width: 900px; margin: 1rem auto; padding: 0 1rem; }
+
+/* ---- 表单 ---- */
+.form-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.form-row input[type="date"] {
+  padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0;
+  border-radius: 8px; font-size: 0.9rem; outline: none;
+}
+.search-input {
+  flex: 1;
+  padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0;
+  border-radius: 8px; font-size: 0.9rem; outline: none;
+  min-width: 120px;
+}
+.search-input:focus { border-color: #667eea; }
+.date-sep { color: #94a3b8; font-weight: 500; }
+.form-row button {
+  padding: 0.6rem 1.2rem; border: none; border-radius: 8px;
+  background: #667eea; color: white; font-weight: 600; cursor: pointer;
+}
+
+/* ---- 加载/空状态 ---- */
+.loading, .empty { text-align: center; padding: 3rem; color: #94a3b8; }
+
+/* ---- 记录卡片 ---- */
+.record-list { display: flex; flex-direction: column; gap: 0.8rem; }
+.record-card {
+  background: white; border-radius: 12px; padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;
+  transition: all 0.2s;
+}
+.record-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+.record-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;
+}
+.record-title { font-size: 1.1rem; font-weight: 700; color: #16213e; }
+.record-status {
+  padding: 0.2rem 0.6rem; border-radius: 4px;
+  font-size: 0.75rem; font-weight: 600;
+}
+.record-status.confirmed { background: #dcfce7; color: #15803d; }
+.record-status.in_progress { background: #dbeafe; color: #1d4ed8; }
+.record-status.pending { background: #fef3c7; color: #a16207; }
+
+.record-meta {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.85rem; color: #475569; margin-bottom: 0.5rem;
+}
+.site-badge {
+  background: #e0e7ff; color: #3730a3; padding: 0.1rem 0.4rem;
+  border-radius: 4px; font-size: 0.75rem; font-weight: 700;
+}
+.record-progress { margin-bottom: 0.5rem; }
+.progress-bar {
+  height: 8px; background: #f1f5f9; border-radius: 4px;
+  overflow: hidden; margin-bottom: 0.3rem;
+}
+.progress-fill {
+  height: 100%; background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 4px; transition: width 0.3s;
+}
+.record-progress-text { font-size: 0.8rem; color: #64748b; }
+.record-time {
+  display: flex; justify-content: space-between;
+  font-size: 0.75rem; color: #94a3b8;
+}
+
+/* ---- 弹窗 ---- */
+.modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 200; display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+.modal-content {
+  background: white; border-radius: 12px; max-width: 800px;
+  width: 100%; max-height: 80vh; overflow-y: auto;
+}
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem; border-bottom: 1px solid #f1f5f9;
+}
+.modal-header h3 { font-size: 1.1rem; color: #16213e; }
+.modal-header button {
+  background: none; border: none; font-size: 1.2rem;
+  cursor: pointer; color: #94a3b8;
+}
+.modal-body { padding: 1rem; }
+.detail-section { margin-bottom: 1.5rem; }
+.detail-section h4 {
+  font-size: 0.9rem; color: #64748b; margin-bottom: 0.5rem;
+  text-transform: uppercase; font-weight: 600;
+}
+.detail-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem; font-size: 0.85rem;
+}
+.detail-grid > div { padding: 0.4rem 0; }
+.detail-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.detail-table th {
+  background: #f1f5f9; padding: 0.5rem; text-align: left;
+  font-weight: 600; color: #475569;
+}
+.detail-table td { padding: 0.5rem; border-bottom: 1px solid #f1f5f9; }
+.code-cell {
+  font-family: 'Courier New', monospace; font-weight: 600; color: #1d4ed8;
+}
+.badge-done { background: #dcfce7; color: #15803d; }
+.badge-active { background: #dbeafe; color: #1d4ed8; }
+.item-badge {
+  padding: 0.1rem 0.4rem; border-radius: 4px;
+  font-size: 0.7rem; font-weight: 600;
+}
+.log-list { display: flex; flex-direction: column; gap: 0.3rem; max-height: 300px; overflow-y: auto; }
+.log-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.4rem 0.6rem; font-size: 0.8rem;
+  border-radius: 6px; background: #f8fafc;
+}
+.log-item.success { background: #f0fdf4; }
+.log-item.failed { background: #fef2f2; }
+.log-time { color: #94a3b8; font-size: 0.75rem; min-width: 140px; }
+.log-barcode {
+  font-family: 'Courier New', monospace; font-weight: 600;
+  color: #1d4ed8; flex: 1;
+}
+.log-status { font-size: 0.9rem; }
+.log-error { color: #dc2626; font-size: 0.75rem; }
+
+@media (max-width: 600px) {
+  body { font-size: 14px; }
+  .form-row { flex-direction: column; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .detail-table { font-size: 0.7rem; }
+  .header nav { gap: 0.15rem; }
+  .header nav a { padding: 0.3rem 0.5rem; font-size: 0.8rem; }
+}
+</style>
