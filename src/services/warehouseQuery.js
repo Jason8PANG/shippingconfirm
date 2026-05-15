@@ -1,16 +1,20 @@
 const sql = require('mssql');
 
 const serverName = process.env.MSSQL_SERVER || 'SUZVPRINT01\\CUSTOMSSYS';
+const serverHost = serverName.split('\\')[0];
+const instanceName = serverName.includes('\\') ? serverName.split('\\')[1] : undefined;
 
 const poolConfig = {
-  server: serverName.split('\\')[0],
+  server: process.env.MSSQL_HOST || serverHost,
   database: process.env.MSSQL_DATABASE || 'csi_datawarehouse',
   user: process.env.MSSQL_USER || 'naipowerbiuser',
   password: process.env.MSSQL_PASSWORD,
+  port: process.env.MSSQL_PORT ? parseInt(process.env.MSSQL_PORT) : undefined,
   options: {
     encrypt: false,
     trustServerCertificate: true,
-    instanceName: serverName.includes('\\') ? serverName.split('\\')[1] : undefined,
+    // 有 MSSQL_HOST 时直接用 IP+端口连接，不需要实例名发现
+    instanceName: process.env.MSSQL_HOST ? undefined : instanceName,
   },
   pool: { min: 0, max: 5, idleTimeoutMillis: 30000 },
 };
