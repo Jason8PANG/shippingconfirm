@@ -4,7 +4,7 @@ services:
     container_name: shipping-confirm
     restart: unless-stopped
     ports:
-      - "8080:3000"
+      - "127.0.0.1:8080:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -16,6 +16,8 @@ services:
       - MSSQL_PORT=1433
     volumes:
       - shipping-data:/app/data
+    extra_hosts:
+      - "SUZVPRINT01:10.0.6.72"
     networks:
       - public-net
 
