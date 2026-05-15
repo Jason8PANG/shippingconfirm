@@ -204,6 +204,25 @@ app.get('/history', (req, res) => {
   res.render('history');
 });
 
+// 签名保存
+app.post('/api/confirmations/:id/sign', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { signature, signedBy } = req.body;
+    if (!signature) {
+      return res.json({ success: false, error: '签名不能为空' });
+    }
+    if (!signedBy || !signedBy.trim()) {
+      return res.json({ success: false, error: '签名者姓名不能为空' });
+    }
+    const result = confirmService.saveSignature(id, signature, signedBy.trim());
+    res.json(result);
+  } catch (err) {
+    console.error('签名保存失败:', err.message);
+    res.json({ success: false, error: err.message });
+  }
+});
+
 // ---- 启动 ----
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {

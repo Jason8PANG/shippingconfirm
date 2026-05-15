@@ -99,9 +99,10 @@
   <section class="section" id="scan-section" x-show="confirmationId" x-cloak>
     
     <!-- 状态头部 -->
-    <div class="status-header" :class="{ 'status-completed': confirmation?.status === 'confirmed' }">
+    <div class="status-header" :class="{ 'status-completed': confirmation?.status === 'confirmed' || confirmation?.status === 'pending_signature' }">
       <div class="status-title">
-        <span x-show="confirmation?.status !== 'confirmed'" x-text="t('scanning')"></span>
+        <span x-show="confirmation?.status !== 'confirmed' && confirmation?.status !== 'pending_signature'" x-text="t('scanning')"></span>
+        <span x-show="confirmation?.status === 'pending_signature'" x-text="t('pendingSignature')"></span>
         <span x-show="confirmation?.status === 'confirmed'" x-text="t('completed')"></span>
       </div>
       <div class="status-progress">
@@ -236,18 +237,56 @@
       </div>
     </div>
 
-    <!-- 完成按钮 -->
+    <!-- 签名提示 / 完成按钮 -->
     <div class="action-row" x-show="allCompleted">
-      <div class="completed-message">
-        🎉 <span x-text="t('notifyDone')"></span> <strong x-text="notice?.PickListId"></strong> <span x-text="t('confirmed')"></span>！
+      <template x-if="confirmation?.status === 'pending_signature'">
+        <div class="sign-prompt">
+          <div class="sign-prompt-message">
+            📝 <span x-text="t('signRequired')"></span>
+          </div>
+          <button class="btn-primary" @click="showSignModal = true"><span x-text="t('openSignPad')"></span></button>
+        </div>
+      </template>
+      <template x-if="confirmation?.status === 'confirmed'">
+        <div>
+          <div class="completed-message">
+            🎉 <span x-text="t('notifyDone')"></span> <strong x-text="notice?.PickListId"></strong> <span x-text="t('confirmed')"></span>！
+            <div class="sign-info" x-show="confirmation?.signed_by">
+              ✍️ <span x-text="t('signedBy')"></span> <strong x-text="confirmation?.signed_by"></strong>
+            </div>
+          </div>
+          <button class="btn-primary" @click="reset()"><span x-text="t('nextSearch')"></span></button>
+        </div>
+      </template>
+    </div>
+
+    <!-- 签名 Modal -->
+    <div class="sign-modal-overlay" x-show="showSignModal" x-cloak @click.self="showSignModal = false">
+      <div class="sign-modal">
+        <h3 x-text="t('signTitle')"></h3>
+        <div class="sign-name-row">
+          <label x-text="t('signerName')"></label>
+          <input type="text" x-model="signedBy" :placeholder="t('signerPlaceholder')">
+        </div>
+        <div class="sign-canvas-wrap">
+          <canvas id="signature-pad" width="500" height="200"></canvas>
+        </div>
+        <div class="sign-actions">
+          <button @click="clearSignature()" x-text="t('clearSignature')"></button>
+          <button class="btn-primary" @click="submitSignature()" :disabled="submittingSignature || !signedBy.trim()">
+            <span x-show="!submittingSignature" x-text="t('confirmSignature')"></span>
+            <span x-show="submittingSignature" x-text="t('submitting')"></span>
+          </button>
+        </div>
+        <div class="sign-error" x-show="signError" x-text="signError"></div>
       </div>
-      <button class="btn-primary" @click="reset()"><span x-text="t('nextSearch')"></span></button>
     </div>
   </section>
 
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4/dist/signature_pad.umd.min.js"></script>
 <script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>
 <script>
 // ---- i18n 翻译字典 ----
@@ -312,6 +351,18 @@ const translations = {
     notifyDone: 'Shipping Notice',
     confirmed: 'confirmed!',
     nextSearch: '🔍 Next Search',
+
+    // signature
+    pendingSignature: '📝 Signature Required',
+    signRequired: 'All cartons scanned! Please sign to complete confirmation.',
+    openSignPad: '✍️ Sign to Confirm',
+    signTitle: 'Confirmation Signature',
+    signerName: 'Signer Name',
+    signerPlaceholder: 'Enter your name',
+    clearSignature: 'Clear',
+    confirmSignature: '✍️ Confirm & Save',
+    submitting: 'Saving...',
+    signedBy: 'Signed by:',
   },
   zh: {
     siteTitle: '出货确认',
@@ -364,6 +415,18 @@ const translations = {
     notifyDone: '出货通知',
     confirmed: '确认完成！',
     nextSearch: '🔍 查询下一个',
+
+    // signature
+    pendingSignature: '📝 需要签名确认',
+    signRequired: '所有箱已扫码完成！请签名以完成确认。',
+    openSignPad: '✍️ 签名确认',
+    signTitle: '确认签名',
+    signerName: '签名者',
+    signerPlaceholder: '请输入姓名',
+    clearSignature: '清除',
+    confirmSignature: '✍️ 确认保存',
+    submitting: '保存中...',
+    signedBy: '签名者：',
   },
 };
 
@@ -402,6 +465,13 @@ function scannerApp() {
 
     lastScanResult: null,
     feedbackTimer: null,
+
+    // signature
+    showSignModal: false,
+    signedBy: '',
+    signError: '',
+    submittingSignature: false,
+    signaturePad: null,
 
     socket: null,
     _scanResultHandler: null,
@@ -546,8 +616,11 @@ function scannerApp() {
     handleProgressUpdate(data) {
       this.confirmation = data.confirmation;
       this.items = data.items;
-      this.allCompleted = data.confirmation.status === 'confirmed';
-      if (this.allCompleted) this.playAllComplete();
+      this.allCompleted = data.confirmation.status === 'pending_signature' || data.confirmation.status === 'confirmed';
+      if (data.confirmation.status === 'pending_signature') {
+        this.$nextTick(() => this.initSignaturePad());
+      }
+      if (data.confirmation.status === 'confirmed') this.playAllComplete();
     },
 
     playFeedback(success) {
@@ -590,6 +663,60 @@ function scannerApp() {
       return this.lang === 'zh' ? d.toLocaleDateString('zh-CN') : d.toLocaleDateString('en-US');
     },
 
+    initSignaturePad() {
+      this.$nextTick(() => {
+        const canvas = document.getElementById('signature-pad');
+        if (!canvas) return;
+        if (this.signaturePad) { this.signaturePad.off(); this.signaturePad = null; }
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+        this.signaturePad = new SignaturePad(canvas, {
+          backgroundColor: 'rgb(255,255,255)',
+          penColor: 'rgb(0,0,0)',
+        });
+      });
+    },
+
+    clearSignature() {
+      if (this.signaturePad) this.signaturePad.clear();
+    },
+
+    async submitSignature() {
+      if (!this.signaturePad || this.signaturePad.isEmpty()) {
+        this.signError = this.lang === 'zh' ? '请先签名' : 'Please sign first';
+        return;
+      }
+      if (!this.signedBy.trim()) {
+        this.signError = this.lang === 'zh' ? '请输入签名者姓名' : 'Please enter signer name';
+        return;
+      }
+      this.submittingSignature = true;
+      this.signError = '';
+      try {
+        const signature = this.signaturePad.toDataURL('image/png');
+        const res = await fetch(`/api/confirmations/${this.confirmationId}/sign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ signature, signedBy: this.signedBy.trim() }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          this.confirmation.status = 'confirmed';
+          this.confirmation.signed_by = this.signedBy.trim();
+          this.showSignModal = false;
+          this.playAllComplete();
+        } else {
+          this.signError = json.error || 'Save failed';
+        }
+      } catch (err) {
+        this.signError = err.message;
+      } finally {
+        this.submittingSignature = false;
+      }
+    },
+
     reset() {
       if (this.socket) {
         this.socket.off('scan-result');
@@ -605,6 +732,11 @@ function scannerApp() {
       this.lastScanResult = null;
       this.searchError = '';
       this.searchErrorType = '';
+      this.showSignModal = false;
+      this.signedBy = '';
+      this.signError = '';
+      this.submittingSignature = false;
+      if (this.signaturePad) { this.signaturePad.off(); this.signaturePad = null; }
     },
   };
 }
@@ -1126,6 +1258,116 @@ button:disabled {
   color: #059669;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   margin-bottom: 1rem;
+}
+
+.sign-info {
+  font-size: 0.9rem;
+  color: #475569;
+  margin-top: 0.5rem;
+}
+
+/* ---- 签名提示 ---- */
+.sign-prompt {
+  width: 100%;
+  text-align: center;
+}
+
+.sign-prompt-message {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+/* ---- 签名 Modal ---- */
+.sign-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
+
+.sign-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.sign-modal h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+  color: #16213e;
+  text-align: center;
+}
+
+.sign-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.sign-name-row label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  color: #475569;
+}
+
+.sign-name-row input {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.sign-name-row input:focus {
+  border-color: #667eea;
+}
+
+.sign-canvas-wrap {
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  background: white;
+}
+
+.sign-canvas-wrap canvas {
+  width: 100%;
+  height: 200px;
+  display: block;
+  touch-action: none;
+}
+
+.sign-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.sign-actions button {
+  padding: 0.7rem 1.2rem;
+  font-size: 0.95rem;
+}
+
+.sign-error {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  text-align: center;
 }
 
 /* ---- 响应式 ---- */

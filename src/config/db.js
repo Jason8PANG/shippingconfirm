@@ -79,4 +79,12 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_confirm_created ON shipping_confirmations(created_at);
 `);
 
+// 迁移：增加签名字段
+try {
+  db.exec(`ALTER TABLE shipping_confirmations ADD COLUMN signature TEXT`);
+} catch (e) { /* 字段已存在则忽略 */ }
+try {
+  db.exec(`ALTER TABLE shipping_confirmations ADD COLUMN signed_by TEXT`);
+} catch (e) { /* 字段已存在则忽略 */ }
+
 module.exports = db;

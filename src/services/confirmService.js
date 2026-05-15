@@ -174,11 +174,19 @@ const checkAllCompleted = db.prepare(`
   WHERE confirmation_id = @confirmation_id
 `);
 
-const markConfirmationCompleted = db.prepare(`
+const markConfirmationPendingSignature = db.prepare(`
   UPDATE shipping_confirmations SET 
-    status = 'confirmed',
+    status = 'pending_signature',
     completed_at = datetime('now', 'localtime')
   WHERE id = @id
+`);
+
+const saveSignatureStmt = db.prepare(`
+  UPDATE shipping_confirmations SET 
+    status = 'confirmed',
+    signature = @signature,
+    signed_by = @signed_by
+  WHERE id = @id AND status = 'pending_signature'
 `);
 
 const getConfirmationById = db.prepare(`
@@ -283,7 +291,7 @@ function processScan(confirmationId, barcode) {
 
   let allDone = false;
   if (progress.completed >= progress.total) {
-    markConfirmationCompleted.run({ id: confirmationId });
+    markConfirmationPendingSignature.run({ id: confirmationId });
     allDone = true;
   }
 
@@ -382,6 +390,19 @@ const getScanLogsByItemId = db.prepare(`
   SELECT * FROM scan_logs WHERE item_id = @item_id ORDER BY scanned_at DESC
 `);
 
+// ---------- 签名保存 ----------
+
+/**
+ * 保存签名并标记确认为已完成
+ */
+function saveSignature(confirmationId, signatureBase64, signedBy) {
+  const result = saveSignatureStmt.run({ id: confirmationId, signature: signatureBase64, signed_by: signedBy });
+  if (result.changes === 0) {
+    return { success: false, error: '签名保存失败：确认记录状态不正确' };
+  }
+  return { success: true };
+}
+
 module.exports = {
   parseQRCode,
   startConfirmation,
@@ -395,4 +416,5 @@ module.exports = {
   getItemsByConfirmationId,
   getScanLogsByConfirmationId,
   getScanLogsByItemId,
+  saveSignature,
 };
