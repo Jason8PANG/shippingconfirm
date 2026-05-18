@@ -4,13 +4,6 @@
   <header class="header">
     <h1>📋 <span x-text="t('siteTitle')"></span></h1>
     <nav>
-      <!-- 站点选择器 -->
-      <select x-model="currentSite" @change="onSiteChange()" class="nav-btn site-select">
-        <option value="">All Sites</option>
-        <option value="410">Site 410</option>
-        <option value="310">Site 310</option>
-        <option value="330">Site 330</option>
-      </select>
       <a href="/" class="nav-btn"><span x-text="t('navScan')"></span></a>
       <a href="/history" class="nav-btn nav-active"><span x-text="t('navHistory')"></span></a>
       <a href="#" @click.prevent="toggleLang()" class="nav-btn lang-btn">
@@ -59,6 +52,7 @@
               <template x-if="record.status === 'confirmed'" x-text="t('done')"></template>
               <template x-if="record.status === 'in_progress'" x-text="t('inProgress')"></template>
               <template x-if="record.status === 'pending'" x-text="t('pending')"></template>
+              <template x-if="record.status === 'pending_signature'" x-text="t('awaitingSign')"></template>
             </span>
           </div>
           <div class="record-meta">
@@ -78,6 +72,19 @@
           <div class="record-time">
             <span><span x-text="t('created')"></span>: <span x-text="record.created_at"></span></span>
             <span x-show="record.completed_at"><span x-text="t('completed')"></span>: <span x-text="record.completed_at"></span></span>
+          </div>
+          <!-- 操作按钮：只有非已确认才显示 -->
+          <div class="record-actions" x-show="record.status !== 'confirmed' && record.status !== 'cancelled'">
+            <button class="action-btn action-scan"
+              x-show="record.status === 'in_progress' || record.status === 'pending'"
+              @click.stop="resumeScan(record.id)">
+              <span x-text="t('btnResumeScan')"></span>
+            </button>
+            <button class="action-btn action-sign"
+              x-show="record.status === 'pending_signature'"
+              @click.stop="openSignModal(record.id)">
+              <span x-text="t('btnSign')"></span>
+            </button>
           </div>
         </div>
       </template>
@@ -119,7 +126,6 @@
               <tr>
                 <th x-text="t('colSeq')"></th>
                 <th x-text="t('colPartNo')"></th>
-                <th x-text="t('colPartName')"></th>
                 <th x-text="t('plannedCartons')"></th>
                 <th x-text="t('scannedCartons')"></th>
                 <th x-text="t('status')"></th>
@@ -130,7 +136,6 @@
                 <tr>
                   <td x-text="item.sequence"></td>
                   <td class="code-cell" x-text="item.item_code"></td>
-                  <td x-text="item.item_name"></td>
                   <td><span x-text="item.planned_boxes"></span> <span x-text="t('cartons')"></span></td>
                   <td><span x-text="item.scanned_boxes"></span> <span x-text="t('cartons')"></span></td>
                   <td>
@@ -181,8 +186,43 @@
     </div>
   </div>
 
+  <!-- 签名弹窗 -->
+  <div class="modal" x-show="showSignModal" x-cloak @click.self="showSignModal = false">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 x-text="t('signTitle')"></h3>
+        <button @click="showSignModal = false">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="sign-form">
+          <div class="sign-name-row">
+            <label x-text="t('signName')"></label>
+            <input type="text" x-model="signerName" :placeholder="t('signNamePlaceholder')" class="sign-input">
+          </div>
+          <div class="sign-pad-wrap">
+            <canvas id="signature-pad-history" width="500" height="200"></canvas>
+          </div>
+          <div class="sign-actions">
+            <button class="action-btn action-clear" @click="clearSignature()">
+              <span x-text="t('signClear')"></span>
+            </button>
+            <button class="action-btn action-cancel" @click="showSignModal = false">
+              <span x-text="t('signCancel')"></span>
+            </button>
+            <button class="action-btn action-sign-submit" @click="submitSignature()" :disabled="submittingSign">
+              <span x-show="!submittingSign" x-text="t('signConfirm')"></span>
+              <span x-show="submittingSign">⏳</span>
+            </button>
+          </div>
+          <div x-show="signError" x-text="signError" style="color:#dc2626;font-size:0.85rem;margin-top:0.5rem;text-align:center;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4/dist/signature_pad.umd.min.js"></script>
 <script src="https://unpkg.com/alpinejs@3/dist/cdn.min.js" defer></script>
 <script>
 const translations = {
@@ -190,7 +230,6 @@ const translations = {
     siteTitle: 'Shipping Confirmation Records',
     navScan: 'Scan',
     navHistory: 'History',
-    allSites: 'All Sites',
     to: 'to',
     searchBtn: '🔍 Search',
     searching: '⏳ Searching...',
@@ -217,7 +256,6 @@ const translations = {
     itemsTitle: 'Items',
     colSeq: 'Seq',
     colPartNo: 'Part No',
-    colPartName: 'Part Name',
     plannedCartons: 'Planned',
     scannedCartons: 'Scanned',
     scanLogs: 'Scan Logs',
@@ -228,12 +266,21 @@ const translations = {
     errorMsg: 'Error',
     singleCarton: 'Single carton',
     noScanLogs: 'No scan records',
+    awaitingSign: '✍️ Pending Signature',
+    btnResumeScan: '📷 Resume Scan',
+    btnSign: '✍️ Sign',
+    signTitle: 'Handwritten Signature',
+    signName: 'Operator Name',
+    signNamePlaceholder: 'Enter your name...',
+    signClear: 'Clear',
+    signConfirm: 'Confirm',
+    signCancel: 'Cancel',
+    nameRequired: 'Please enter your name',
   },
   zh: {
     siteTitle: '出货确认记录',
     navScan: '扫码确认',
     navHistory: '历史记录',
-    allSites: '全部站点',
     to: '至',
     searchBtn: '🔍 查询',
     searching: '⏳ 查询中...',
@@ -260,7 +307,6 @@ const translations = {
     itemsTitle: '品项明细',
     colSeq: '序号',
     colPartNo: '品号',
-    colPartName: '品名',
     plannedCartons: '计划箱数',
     scannedCartons: '已扫箱数',
     scanLogs: '扫码日志',
@@ -271,6 +317,17 @@ const translations = {
     errorMsg: '错误信息',
     singleCarton: '单箱',
     noScanLogs: '暂无扫码记录',
+    awaitingSign: '✍️ 待签名',
+    btnResumeScan: '📷 继续扫码',
+    btnSign: '✍️ 签名',
+    signTitle: '手写签名',
+    signName: '操作者姓名',
+    signNamePlaceholder: '输入你的姓名...',
+    signClear: '清除',
+    signConfirm: '确认',
+    signCancel: '取消',
+    nameRequired: '请输入你的姓名',
+    btnResumeScanZh: '继续扫码',
   },
 };
 
@@ -286,25 +343,25 @@ function historyApp() {
     endDate: '',
     searchPickListId: '',
     searchCustomer: '',
-    currentSite: '',
     showDetailModal: false,
     detail: null,
+
+    // 签名相关
+    showSignModal: false,
+    signingConfirmationId: null,
+    signerName: '',
+    signaturePad: null,
+    submittingSign: false,
+    signError: '',
 
     init() {
       const saved = localStorage.getItem('shippingLang');
       if (saved === 'zh') this.lang = 'zh';
-      const savedSite = localStorage.getItem('shippingSite');
-      if (savedSite) this.currentSite = savedSite;
       const today = new Date();
       const weekAgo = new Date(today);
       weekAgo.setDate(weekAgo.getDate() - 7);
       this.startDate = weekAgo.toISOString().split('T')[0];
       this.endDate = today.toISOString().split('T')[0];
-      this.loadHistory();
-    },
-
-    onSiteChange() {
-      localStorage.setItem('shippingSite', this.currentSite);
       this.loadHistory();
     },
 
@@ -316,7 +373,6 @@ function historyApp() {
         if (this.endDate) params.set('endDate', this.endDate);
         if (this.searchPickListId.trim()) params.set('pickListId', this.searchPickListId.trim());
         if (this.searchCustomer.trim()) params.set('customer', this.searchCustomer.trim());
-        if (this.currentSite) params.set('siteRef', this.currentSite);
         const url = `/api/history?${params.toString()}`;
         const res = await fetch(url);
         const json = await res.json();
@@ -338,6 +394,71 @@ function historyApp() {
         }
       } catch (err) {
         console.error('Failed to load detail:', err);
+      }
+    },
+
+    // 继续扫码：跳转到扫码页并带上 resumeId
+    resumeScan(confirmationId) {
+      window.location.href = `/?resumeId=${confirmationId}`;
+    },
+
+    // 打开签名弹窗
+    openSignModal(confirmationId) {
+      this.signingConfirmationId = confirmationId;
+      this.signerName = '';
+      this.signError = '';
+      this.showSignModal = true;
+      this.$nextTick(() => this.initSignaturePad());
+    },
+
+    initSignaturePad() {
+      const canvas = document.getElementById('signature-pad-history');
+      if (!canvas) return;
+      if (this.signaturePad) { this.signaturePad.off(); this.signaturePad = null; }
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext('2d').scale(ratio, ratio);
+      this.signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgb(255,255,255)',
+        penColor: 'rgb(0,0,0)',
+      });
+    },
+
+    clearSignature() {
+      if (this.signaturePad) this.signaturePad.clear();
+    },
+
+    async submitSignature() {
+      if (!this.signerName.trim()) {
+        this.signError = this.t('nameRequired');
+        return;
+      }
+      if (!this.signaturePad || this.signaturePad.isEmpty()) {
+        this.signError = this.lang === 'zh' ? '请先签名' : 'Please sign first';
+        return;
+      }
+      this.submittingSign = true;
+      this.signError = '';
+      try {
+        const signature = this.signaturePad.toDataURL('image/png');
+        const res = await fetch(`/api/confirmations/${this.signingConfirmationId}/sign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ signature, signedBy: this.signerName.trim() }),
+        });
+        const json = await res.json();
+        if (json.success) {
+          this.showSignModal = false;
+          // 刷新记录列表，更新状态
+          await this.loadHistory();
+        } else {
+          this.signError = json.error || 'Failed to save signature';
+        }
+      } catch (err) {
+        this.signError = err.message;
+      } finally {
+        this.submittingSign = false;
       }
     },
   };
@@ -388,25 +509,6 @@ body {
   border: 1px solid rgba(255,255,255,0.3) !important;
   font-weight: 600; cursor: pointer;
 }
-.site-select {
-  background: rgba(255,255,255,0.15);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 6px;
-  height: 34px;
-  padding: 0 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  outline: none;
-  line-height: 1;
-  box-sizing: border-box;
-}
-.site-select option {
-  background: #1a1a2e;
-  color: white;
-}
-
 /* ---- 区块 ---- */
 .section { max-width: 900px; margin: 1rem auto; padding: 0 1rem; }
 
@@ -536,12 +638,88 @@ body {
 .log-status { font-size: 0.9rem; }
 .log-error { color: #dc2626; font-size: 0.75rem; }
 
-@media (max-width: 600px) {
+/* ---- 记录操作按钮 ---- */
+.record-status.pending_signature { background: #fef3c7; color: #a16207; }
+.record-actions {
+  display: flex; gap: 0.5rem; margin-top: 0.5rem;
+}
+.action-btn {
+  padding: 0.4rem 0.8rem; border: none; border-radius: 6px;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.action-scan {
+  background: #dbeafe; color: #1d4ed8;
+}
+.action-scan:hover { background: #bfdbfe; }
+.action-sign {
+  background: #f3e8ff; color: #7c3aed;
+}
+.action-sign:hover { background: #e9d5ff; }
+.action-clear { background: #f1f5f9; color: #475569; }
+.action-cancel { background: #f1f5f9; color: #475569; }
+.action-sign-submit {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+.action-sign-submit:hover:not(:disabled) { opacity: 0.9; }
+.action-sign-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---- 签名弹窗 ---- */
+.sign-form { display: flex; flex-direction: column; gap: 1rem; }
+.sign-name-row {
+  display: flex; align-items: center; gap: 0.8rem;
+}
+.sign-name-row label {
+  font-weight: 600; font-size: 0.9rem; color: #475569; white-space: nowrap;
+}
+.sign-input {
+  flex: 1; padding: 0.6rem 0.8rem;
+  border: 2px solid #e2e8f0; border-radius: 8px;
+  font-size: 0.95rem; outline: none;
+}
+.sign-input:focus { border-color: #667eea; }
+.sign-pad-wrap {
+  border: 2px solid #e2e8f0; border-radius: 10px; overflow: hidden;
+  background: white;
+}
+.sign-pad-wrap canvas {
+  width: 100%; height: 200px; display: block; touch-action: none;
+}
+.sign-actions {
+  display: flex; gap: 0.5rem; justify-content: flex-end;
+}
+
+/* ---- log 表格 ---- */
+.log-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.log-table th {
+  background: #f1f5f9; padding: 0.4rem 0.5rem;
+  text-align: left; font-weight: 600; color: #475569;
+}
+.log-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #f1f5f9; }
+.log-ok td { background: #f0fdf4; }
+.log-fail td { background: #fef2f2; }
+.log-error-cell { color: #dc2626; max-width: 200px; word-break: break-word; }
+
+@media (max-width: 480px) {
   body { font-size: 14px; }
+  .header { padding: 0.6rem 0.8rem; flex-wrap: wrap; gap: 0.4rem; }
+  .header h1 { font-size: 1rem; }
+  .header nav { gap: 0.15rem; width: 100%; justify-content: flex-end; }
+  .nav-btn { height: 30px; padding: 0 0.5rem; font-size: 0.78rem; }
+  .section { margin: 0.5rem auto; padding: 0 0.5rem; }
   .form-row { flex-direction: column; }
+  .search-input { min-width: auto; font-size: 0.9rem; }
   .detail-grid { grid-template-columns: 1fr; }
   .detail-table { font-size: 0.7rem; }
-  .header nav { gap: 0.15rem; }
-  .header nav a { padding: 0.3rem 0.5rem; font-size: 0.8rem; }
+  .detail-table th, .detail-table td { padding: 0.3rem 0.4rem; }
+  .log-table { font-size: 0.7rem; }
+  .log-table th, .log-table td { padding: 0.25rem 0.3rem; }
+  .record-card { padding: 0.6rem; }
+  .modal-content { max-height: 90vh; }
+}
+
+@media (max-width: 360px) {
+  body { font-size: 13px; }
+  .header h1 { font-size: 0.9rem; }
 }
 </style>

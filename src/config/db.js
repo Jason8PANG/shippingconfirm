@@ -86,5 +86,8 @@ try {
 try {
   db.exec(`ALTER TABLE shipping_confirmations ADD COLUMN signed_by TEXT`);
 } catch (e) { /* 字段已存在则忽略 */ }
+try {
+  db.exec(`ALTER TABLE shipping_confirmations ADD COLUMN drop_cust_name TEXT`);
+} catch (e) { /* 字段已存在则忽略 */ }
 
 module.exports = db;

@@ -4,13 +4,6 @@
   <header class="header">
     <h1>📦 <span x-text="t('siteTitle')"></span></h1>
     <nav>
-      <!-- 站点选择器 -->
-      <select x-model="currentSite" @change="onSiteChange()" class="nav-btn site-select">
-        <option value="">All Sites</option>
-        <option value="410">Site 410</option>
-        <option value="310">Site 310</option>
-        <option value="330">Site 330</option>
-      </select>
       <a href="/" class="nav-btn nav-active"><span x-text="t('navScan')"></span></a>
       <a href="/history" class="nav-btn"><span x-text="t('navHistory')"></span></a>
       <a href="#" @click.prevent="toggleLang()" class="nav-btn lang-btn">
@@ -50,54 +43,87 @@
         </span>
       </div>
       <div class="notice-meta">
-        <div><strong x-text="t('customer')"></strong> <span x-text="notice?.cust_name"></span></div>
+        <div><strong x-text="t('customer')"></strong> <span x-text="notice?.cust_name"></span><template x-if="notice?.drop_cust_name && notice.drop_cust_name !== notice.cust_name"><span style="color:#64748b;font-size:0.85em;margin-left:4px;">(<span x-text="notice.drop_cust_name"></span>)</span></template></div>
         <div><strong x-text="t('shipDate')"></strong> <span x-text="formatDate(notice?.due_date)"></span></div>
         <div><strong x-text="t('shipMethod')"></strong> <span x-text="notice?.ship_code"></span></div>
         <div><strong x-text="t('totalCartons')"></strong> <span x-text="notice?.total_cartons"></span> <span x-text="t('cartons')"></span></div>
       </div>
+
+      <!-- 品项列表（移入 notice-card 内保持宽度一致） -->
+      <div class="items-preview" x-show="items.length > 0">
+        <h4><span x-text="t('itemsTitle')"></span> (<span x-text="items.length"></span> <span x-text="t('items')"></span>)</h4>
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th x-text="t('colSeq')"></th>
+              <th x-text="t('colRefNum')"></th>
+              <th x-text="t('colPartNo')"></th>
+              <th x-text="t('colQty')"></th>
+              <th x-text="t('colCartons')"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="(item, idx) in items" :key="idx">
+              <tr>
+                <td x-text="item.Sequence"></td>
+                <td x-text="item.RefNum"></td>
+                <td class="code-cell" x-text="item.item_code"></td>
+                <td><span x-text="item.qty_to_pick"></span> <span x-text="item.um"></span></td>
+                <td class="highlight"><span x-text="item.planned_boxes"></span> <span x-text="t('cartons')"></span></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- 品项列表 -->
-    <div class="items-preview" x-show="items.length > 0">
-      <h4><span x-text="t('itemsTitle')"></span> (<span x-text="items.length"></span> <span x-text="t('items')"></span>)</h4>
-      <table class="items-table">
-        <thead>
-          <tr>
-            <th x-text="t('colSeq')"></th>
-            <th>RefNum</th>
-            <th x-text="t('colPartNo')"></th>
-            <th x-text="t('colPartName')"></th>
-            <th x-text="t('colQty')"></th>
-            <th x-text="t('colCartons')"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <template x-for="(item, idx) in items" :key="idx">
-            <tr>
-              <td x-text="item.Sequence"></td>
-              <td x-text="item.RefNum"></td>
-              <td class="code-cell" x-text="item.item_code"></td>
-              <td x-text="item.item_name"></td>
-              <td><span x-text="item.qty_to_pick"></span> <span x-text="item.um"></span></td>
-              <td class="highlight"><span x-text="item.planned_boxes"></span> <span x-text="t('cartons')"></span></td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
+    <!-- 进行中提示 -->
+    <div class="resume-banner" x-show="inProgressId" x-cloak>
+      <div class="resume-icon">⏸️</div>
+      <div class="resume-info">
+        <div class="resume-title" x-text="t('resumeTitle')"></div>
+        <div class="resume-progress">
+          <div class="progress-bar progress-small">
+            <div class="progress-fill" :style="'width: ' + (inProgressTotal ? Math.round(inProgressScanned / inProgressTotal * 100) : 0) + '%'"></div>
+          </div>
+          <span x-text="inProgressScanned + ' / ' + inProgressTotal + ' ' + t('cartons')"></span>
+        </div>
+      </div>
     </div>
 
     <div class="action-row">
-      <button class="btn-primary" @click="startConfirmation()" :disabled="starting">
-        <span x-show="!starting" x-text="t('startConfirm')"></span>
-        <span x-show="starting" x-text="t('starting')"></span>
-      </button>
-      <button @click="reset()" x-text="t('cancel')"></button>
+      <template x-if="inProgressId">
+        <div style="display:flex;gap:0.5rem;width:100%">
+          <button class="btn-primary" @click="resumeConfirmation(inProgressId)" :disabled="starting">
+            <span x-show="!starting" x-text="t('resumeConfirm')"></span>
+            <span x-show="starting" x-text="t('starting')"></span>
+          </button>
+          <button class="btn-danger" @click="restartConfirmation()" :disabled="starting" x-text="t('restartConfirm')"></button>
+        </div>
+      </template>
+      <template x-if="!inProgressId">
+        <div style="display:flex;gap:0.5rem;width:100%">
+          <button class="btn-primary" @click="startConfirmation()" :disabled="starting">
+            <span x-show="!starting" x-text="t('startConfirm')"></span>
+            <span x-show="starting" x-text="t('starting')"></span>
+          </button>
+          <button @click="reset()" x-text="t('cancel')"></button>
+        </div>
+      </template>
     </div>
   </section>
 
   <!-- 扫码界面 -->
   <section class="section" id="scan-section" x-show="confirmationId" x-cloak>
     
+    <!-- 返回按钮 -->
+    <div class="back-row" x-show="confirmationId">
+      <button class="btn-back" @click="backToNotice()">
+        ← <span x-text="t('backToNotice')"></span>
+      </button>
+      <span class="back-hint" x-text="t('backHint')"></span>
+    </div>
+
     <!-- 状态头部 -->
     <div class="status-header" :class="{ 'status-completed': confirmation?.status === 'confirmed' || confirmation?.status === 'pending_signature' }">
       <div class="status-title">
@@ -129,39 +155,37 @@
         <div class="item-code" x-text="currentItem?.item_code"></div>
         <div class="item-name" x-text="currentItem?.item_name"></div>
         <div class="item-meta" x-show="currentItem?.wo_number">
-          <span x-text="t('wo')"></span>: <span x-text="currentItem.wo_number"></span>
+          <span x-text="t('wo')"></span>: <span x-text="currentItem?.wo_number"></span>
         </div>
         <div class="item-progress">
           <span x-text="currentItem?.scanned_boxes || 0"></span> / 
           <span x-text="currentItem?.planned_boxes"></span> <span x-text="t('cartons')"></span>
-          <span x-show="currentItem?.wo_number"> | <span x-text="t('expectBox')"></span> <span x-text="currentItem?.scanned_boxes + 1"></span></span>
+          <span x-show="currentItem?.wo_number"> | <span x-text="t('expectBox')"></span> <span x-text="(currentItem?.scanned_boxes || 0) + 1"></span></span>
         </div>
         <div class="progress-bar progress-small">
           <div class="progress-fill" 
-               :style="'width: ' + (currentItem ? (currentItem.scanned_boxes / currentItem.planned_boxes * 100) : 0) + '%'"></div>
+               :style="'width: ' + (currentItem ? ((currentItem.scanned_boxes || 0) / (currentItem.planned_boxes || 1) * 100) : 0) + '%'"></div>
         </div>
       </div>
     </div>
 
     <!-- 扫码输入 -->
     <div class="scan-input-area" x-show="!allCompleted">
-      <div class="scan-input-row">
-        <input type="text" 
-               x-ref="barcodeInput" 
-               x-model="barcode" 
-               @keyup.enter="doScan()" 
-               autofocus
-               :placeholder="t('scanPlaceholder')"
-               :disabled="allCompleted"
-               class="scan-input"
-               autocomplete="off"
-               autocorrect="off"
-               autocapitalize="off"
-               spellcheck="false">
-        <button @click="doScan()" :disabled="allCompleted || !barcode.trim()">
-          <span x-text="t('confirm')"></span>
-        </button>
-      </div>
+      <input type="text" 
+             x-ref="barcodeInput" 
+             x-model="barcode" 
+             @keyup.enter="doScan()" 
+             autofocus
+             :placeholder="t('scanPlaceholder')"
+             :disabled="allCompleted"
+             class="scan-input"
+             autocomplete="off"
+             autocorrect="off"
+             autocapitalize="off"
+             spellcheck="false">
+      <button class="scan-confirm-btn" @click="doScan()" :disabled="allCompleted || !barcode.trim()">
+        <span x-text="t('confirm')"></span>
+      </button>
     </div>
 
     <!-- 最近扫码结果 -->
@@ -172,17 +196,17 @@
           <div class="scan-detail" x-show="lastScanResult?.qrInfo">
             <div>
               <template x-if="lastScanResult?.qrInfo?.boxNum">
-                📦 <code x-text="lastScanResult.qrInfo.boxNum + '/' + lastScanResult.qrInfo.totalBoxes + ' ' + t('cartons')"></code>
+                📦 <code x-text="lastScanResult?.qrInfo?.boxNum + '/' + lastScanResult?.qrInfo?.totalBoxes + ' ' + t('cartons')"></code>
               </template>
               <template x-if="!lastScanResult?.qrInfo?.boxNum">
                 📦 <span x-text="t('singleCarton')"></span>
               </template>
-              <span x-show="lastScanResult?.qrInfo?.dateCode"> | <span x-text="t('dateCode')"></span>: <span x-text="lastScanResult.qrInfo.dateCode"></span></span>
-              <span x-show="lastScanResult?.qrInfo?.wo"> | <span x-text="t('wo')"></span>: <span x-text="lastScanResult.qrInfo.wo"></span></span>
+              <span x-show="lastScanResult?.qrInfo?.dateCode"> | <span x-text="t('dateCode')"></span>: <span x-text="lastScanResult?.qrInfo?.dateCode"></span></span>
+              <span x-show="lastScanResult?.qrInfo?.wo"> | <span x-text="t('wo')"></span>: <span x-text="lastScanResult?.qrInfo?.wo"></span></span>
             </div>
             <template x-if="lastScanResult?.item">
               <div>
-                <span x-text="t('progress')"></span>: <span x-text="lastScanResult.item.scanned_boxes"></span>/<span x-text="lastScanResult.item.planned_boxes"></span> <span x-text="t('cartons')"></span> | 
+                <span x-text="t('progress')"></span>: <span x-text="lastScanResult?.item?.scanned_boxes"></span>/<span x-text="lastScanResult?.item?.planned_boxes"></span> <span x-text="t('cartons')"></span> | 
                 <span x-text="t('total')"></span>: <span x-text="lastScanResult?.progress?.totalScanned"></span>/<span x-text="lastScanResult?.progress?.totalPlanned"></span> <span x-text="t('cartons')"></span>
               </div>
             </template>
@@ -195,17 +219,17 @@
           <div class="scan-detail" x-show="lastScanResult?.qrInfo && !lastScanResult?.duplicate">
             <div>
               <span x-text="t('detected')"></span>: <span x-text="t('partNo')"></span> <code x-text="lastScanResult?.qrInfo?.custPn || '-'"></code>
-              <span x-show="lastScanResult?.qrInfo?.wo"> | <span x-text="t('wo')"></span> <code x-text="lastScanResult.qrInfo.wo"></code></span>
+              <span x-show="lastScanResult?.qrInfo?.wo"> | <span x-text="t('wo')"></span> <code x-text="lastScanResult?.qrInfo?.wo"></code></span>
               <template x-if="lastScanResult?.qrInfo?.boxNum">
-                <span> | <span x-text="t('boxNo')"></span> <code x-text="lastScanResult.qrInfo.boxNum + '/' + lastScanResult.qrInfo.totalBoxes"></code></span>
+                <span> | <span x-text="t('boxNo')"></span> <code x-text="lastScanResult?.qrInfo?.boxNum + '/' + lastScanResult?.qrInfo?.totalBoxes"></code></span>
               </template>
               <template x-if="!lastScanResult?.qrInfo?.boxNum">
                 <span> | <span x-text="t('singleCarton')"></span></span>
               </template>
             </div>
             <div x-show="lastScanResult?.currentItem" style="margin-top: 4px;">
-              ⚠️ <span x-text="t('expected')"></span>: <span x-text="t('partNo')"></span> <code x-text="lastScanResult.currentItem.item_code"></code>
-              <span x-show="lastScanResult?.currentItem?.wo_number"> | <span x-text="t('wo')"></span> <code x-text="lastScanResult.currentItem.wo_number"></code></span>
+              ⚠️ <span x-text="t('expected')"></span>: <span x-text="t('partNo')"></span> <code x-text="lastScanResult?.currentItem?.item_code"></code>
+              <span x-show="lastScanResult?.currentItem?.wo_number"> | <span x-text="t('wo')"></span> <code x-text="lastScanResult?.currentItem?.wo_number"></code></span>
             </div>
           </div>
         </div>
@@ -296,7 +320,6 @@ const translations = {
     siteTitle: 'Shipping Confirmation',
     navScan: 'Scan',
     navHistory: 'History',
-    allSites: 'All Sites',
 
     // search
     searchTitle: 'Search Shipping Notice',
@@ -306,7 +329,6 @@ const translations = {
     searchHint: 'Enter the PickList ID or scan a barcode to query the warehouse and list pending items',
     notFound: 'Shipping Notice not found! Please check the ID and try again.',
     alreadyConfirmed: 'This Shipping Notice has already been confirmed! Cannot confirm again.',
-    siteMismatch: 'This notice belongs to Site {site}, but current site filter is {current}. Please switch site or clear filter.',
 
     // notice
     customer: 'Customer',
@@ -317,8 +339,8 @@ const translations = {
     itemsTitle: 'Shipping Items',
     items: 'items',
     colSeq: 'Seq',
+    colRefNum: 'Customer Order',
     colPartNo: 'Part No',
-    colPartName: 'Part Name',
     colQty: 'Qty',
     colCartons: 'Cartons',
     startConfirm: '🚀 Start Confirmation',
@@ -363,12 +385,18 @@ const translations = {
     confirmSignature: '✍️ Confirm & Save',
     submitting: 'Saving...',
     signedBy: 'Signed by:',
+
+    // resume & back
+    backToNotice: 'Back',
+    backHint: 'Progress is saved, you can resume later',
+    resumeTitle: 'This notice has unfinished scan progress',
+    resumeConfirm: '▶️ Resume Scanning',
+    restartConfirm: '🔄 Restart',
   },
   zh: {
     siteTitle: '出货确认',
     navScan: '扫码确认',
     navHistory: '历史记录',
-    allSites: '全部站点',
     searchTitle: '查询出货通知',
     searchPlaceholder: '输入 PickListId 或扫码（如 182473）',
     searchBtn: '🔍 查询',
@@ -376,7 +404,6 @@ const translations = {
     searchHint: '输入出货通知编号或扫码，系统将查询数据仓库并列出待出货明细',
     notFound: '出货通知不存在！请检查编号后重试。',
     alreadyConfirmed: '该出货通知已确认完成！不允许重复确认。',
-    siteMismatch: '该通知属于站点 {site}，但当前站点筛选为 {current}。请切换站点或清除筛选。',
     customer: '客户',
     shipDate: '计划出货日',
     shipMethod: '出货方式',
@@ -385,8 +412,8 @@ const translations = {
     itemsTitle: '出货品项明细',
     items: '项',
     colSeq: '序号',
+    colRefNum: '销售订单',
     colPartNo: '品号',
-    colPartName: '品名',
     colQty: '数量',
     colCartons: '箱数',
     startConfirm: '🚀 开始确认',
@@ -427,6 +454,13 @@ const translations = {
     confirmSignature: '✍️ 确认保存',
     submitting: '保存中...',
     signedBy: '签名者：',
+
+    // resume & back
+    backToNotice: '返回',
+    backHint: '进度已保存，可稍后继续扫码',
+    resumeTitle: '该出货通知有未完成的扫码进度',
+    resumeConfirm: '▶️ 继续扫码',
+    restartConfirm: '🔄 重新开始',
   },
 };
 
@@ -449,7 +483,6 @@ function scannerApp() {
       localStorage.setItem('shippingLang', this.lang);
     },
 
-    currentSite: '',
     searchInput: '',
     searching: false,
     searchError: '',
@@ -462,6 +495,11 @@ function scannerApp() {
     confirmation: null,
     barcode: '',
     allCompleted: false,
+
+    // 进行中的已有确认（断点续扫）
+    inProgressId: null,
+    inProgressScanned: 0,
+    inProgressTotal: 0,
 
     lastScanResult: null,
     feedbackTimer: null,
@@ -480,16 +518,19 @@ function scannerApp() {
     init() {
       const saved = localStorage.getItem('shippingLang');
       if (saved === 'zh') this.lang = 'zh';
-      const savedSite = localStorage.getItem('shippingSite');
-      if (savedSite) this.currentSite = savedSite;
 
-      this.socket = io();
+      this.socket = io({ transports: ['polling', 'websocket'] });
       this.socket.on('connect', () => console.log('[Socket] Connected'));
       this.socket.on('disconnect', () => console.log('[Socket] Disconnected'));
-    },
 
-    onSiteChange() {
-      localStorage.setItem('shippingSite', this.currentSite);
+      // 处理来自历史记录页的 resumeId 参数（继续扫码）
+      const urlParams = new URLSearchParams(window.location.search);
+      const resumeId = urlParams.get('resumeId');
+      if (resumeId) {
+        // 清除 URL 参数，避免刷新重复触发
+        window.history.replaceState({}, '', '/');
+        this.resumeConfirmation(parseInt(resumeId));
+      }
     },
 
     async searchNotice() {
@@ -497,12 +538,14 @@ function scannerApp() {
       this.searching = true;
       this.searchError = '';
       this.searchErrorType = '';
+      this.inProgressId = null;
+      this.inProgressScanned = 0;
+      this.inProgressTotal = 0;
       try {
         const res = await fetch(`/api/notices/${encodeURIComponent(this.searchInput.trim())}`);
         const json = await res.json();
         if (json.success) {
           if (!json.data.notice) {
-            // 出货通知不存在
             this.notice = null;
             this.items = [];
             this.searchError = this.t('notFound');
@@ -512,19 +555,35 @@ function scannerApp() {
           this.notice = json.data.notice;
           this.items = json.data.items;
 
-          // 站点过滤检查
-          if (this.currentSite && this.notice.SiteRef !== this.currentSite) {
-            this.searchError = this.t('siteMismatch', { site: this.notice.SiteRef, current: this.currentSite });
-            this.searchErrorType = 'site_mismatch';
-            return;
-          }
-
           this.searchError = '';
           this.searchErrorType = '';
+
+          // 检查是否有进行中的确认记录
+          try {
+            const chkRes = await fetch(`/api/confirmations/by-picklist/${encodeURIComponent(this.searchInput.trim())}`);
+            const chkJson = await chkRes.json();
+            if (chkJson.success && chkJson.data && (chkJson.data.status === 'in_progress' || chkJson.data.status === 'pending_signature')) {
+              this.inProgressId = chkJson.data.id;
+              this.inProgressScanned = chkJson.data.scanned_boxes || 0;
+              this.inProgressTotal = chkJson.data.total_cartons || 0;
+            }
+          } catch (e) {}
+
         } else {
           this.notice = null;
           this.items = [];
           if (json.error === 'not_found') {
+            // 仓库查不到，也检查本地续扫
+            try {
+              const chkRes = await fetch(`/api/confirmations/by-picklist/${encodeURIComponent(this.searchInput.trim())}`);
+              const chkJson = await chkRes.json();
+              if (chkJson.success && chkJson.data && (chkJson.data.status === 'in_progress' || chkJson.data.status === 'pending_signature')) {
+                this.inProgressId = chkJson.data.id;
+                this.inProgressScanned = chkJson.data.scanned_boxes || 0;
+                this.inProgressTotal = chkJson.data.total_cartons || 0;
+                return;
+              }
+            } catch (e) {}
             this.searchError = this.t('notFound');
             this.searchErrorType = 'not_found';
           } else {
@@ -551,7 +610,6 @@ function scannerApp() {
         });
         const json = await res.json();
         if (json.success) {
-          this.confirmationId = json.confirmationId;
           this.confirmation = {
             ...json.notice,
             id: json.confirmationId,
@@ -560,15 +618,7 @@ function scannerApp() {
             status: 'in_progress',
           };
           this.items = json.items;
-          this.allCompleted = false;
-          this.$nextTick(() => this.$refs.barcodeInput.focus());
-          this.socket.emit('join-confirmation', json.confirmationId);
-          if (this._scanResultHandler) this.socket.off('scan-result', this._scanResultHandler);
-          if (this._progressUpdateHandler) this.socket.off('progress-update', this._progressUpdateHandler);
-          this._scanResultHandler = (result) => this.handleScanResult(result);
-          this._progressUpdateHandler = (data) => this.handleProgressUpdate(data);
-          this.socket.on('scan-result', this._scanResultHandler);
-          this.socket.on('progress-update', this._progressUpdateHandler);
+          this._enterScanMode(json.confirmationId);
         } else {
           if (json.error === 'already_confirmed') {
             this.searchError = this.t('alreadyConfirmed');
@@ -580,9 +630,11 @@ function scannerApp() {
             this.searchErrorType = 'not_found';
             this.notice = null;
             this.items = [];
-          } else if (json.confirmationId) {
-            alert(this.lang === 'zh' ? '此出货通知已在确认中' : 'This notice is already being confirmed');
-            window.location.href = `/scan?id=${json.confirmationId}`;
+          } else if (json.error === 'in_progress' && json.confirmationId) {
+            // 已有进行中记录 → 自动切换到 resume 模式
+            this.inProgressId = json.confirmationId;
+            this.inProgressScanned = json.scanned || 0;
+            this.inProgressTotal = json.total || 0;
           } else {
             alert(json.message || json.error);
           }
@@ -592,6 +644,81 @@ function scannerApp() {
       } finally {
         this.starting = false;
       }
+    },
+
+    // 继续扫码（断点续扫）
+    async resumeConfirmation(confirmationId) {
+      this.starting = true;
+      try {
+        const res = await fetch(`/api/confirmations/${confirmationId}`);
+        const json = await res.json();
+        if (json.success) {
+          this.confirmation = json.data.confirmation;
+          this.items = json.data.items;
+          this.allCompleted = this.confirmation.status === 'pending_signature' || this.confirmation.status === 'confirmed';
+          this._enterScanMode(confirmationId);
+          if (this.confirmation.status === 'pending_signature') {
+            this.$nextTick(() => this.initSignaturePad());
+          }
+        } else {
+          alert(json.error || 'Resume failed');
+        }
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        this.starting = false;
+      }
+    },
+
+    // 重新开始（删除旧记录后重载页面）
+    async restartConfirmation() {
+      const msg = this.lang === 'zh'
+        ? '确认要丢弃已有进度，从头开始吗？'
+        : 'Discard existing progress and restart from scratch?';
+      if (!confirm(msg)) return;
+      if (this.inProgressId) {
+        try {
+          await fetch(`/api/confirmations/${this.inProgressId}/cancel`, { method: 'POST' });
+        } catch (e) {}
+      }
+      location.reload();
+    },
+
+    // 进入扫码模式（公共逻辑）
+    _enterScanMode(confirmationId) {
+      this.confirmationId = confirmationId;
+      this.inProgressId = null;
+      this.allCompleted = this.allCompleted || false;
+      this.$nextTick(() => {
+        if (this.$refs.barcodeInput && !this.allCompleted) this.$refs.barcodeInput.focus();
+      });
+      this.socket.emit('join-confirmation', confirmationId);
+      if (this._scanResultHandler) this.socket.off('scan-result', this._scanResultHandler);
+      if (this._progressUpdateHandler) this.socket.off('progress-update', this._progressUpdateHandler);
+      this._scanResultHandler = (result) => this.handleScanResult(result);
+      this._progressUpdateHandler = (data) => this.handleProgressUpdate(data);
+      this.socket.on('scan-result', this._scanResultHandler);
+      this.socket.on('progress-update', this._progressUpdateHandler);
+    },
+
+    // 返回出货通知详情（保留 confirmationId 进度）
+    backToNotice() {
+      if (this.socket) {
+        if (this._scanResultHandler) this.socket.off('scan-result', this._scanResultHandler);
+        if (this._progressUpdateHandler) this.socket.off('progress-update', this._progressUpdateHandler);
+      }
+      // 记录当前进度 id 供 resume banner 显示
+      if (this.confirmationId && this.confirmation?.status !== 'confirmed') {
+        this.inProgressId = this.confirmationId;
+        this.inProgressScanned = this.confirmation?.scanned_boxes || 0;
+        this.inProgressTotal = this.confirmation?.total_cartons || 0;
+      }
+      this.confirmationId = null;
+      this.confirmation = null;
+      this.barcode = '';
+      this.lastScanResult = null;
+      this.allCompleted = false;
+      this.showSignModal = false;
     },
 
     doScan() {
@@ -732,6 +859,9 @@ function scannerApp() {
       this.lastScanResult = null;
       this.searchError = '';
       this.searchErrorType = '';
+      this.inProgressId = null;
+      this.inProgressScanned = 0;
+      this.inProgressTotal = 0;
       this.showSignModal = false;
       this.signedBy = '';
       this.signError = '';
@@ -812,26 +942,6 @@ body {
   border: 1px solid rgba(255,255,255,0.3) !important;
   font-weight: 600;
   cursor: pointer;
-}
-
-.site-select {
-  background: rgba(255,255,255,0.15);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.3);
-  border-radius: 6px;
-  height: 34px;
-  padding: 0 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  outline: none;
-  line-height: 1;
-  box-sizing: border-box;
-}
-
-.site-select option {
-  background: #1a1a2e;
-  color: white;
 }
 
 /* ---- 区块 ---- */
@@ -968,6 +1078,12 @@ button:disabled {
 }
 
 /* ---- 品项表格 ---- */
+.items-preview {
+  margin-top: 0.8rem;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 0.8rem;
+}
+
 .items-table {
   width: 100%;
   border-collapse: collapse;
@@ -1122,26 +1238,40 @@ button:disabled {
   margin-bottom: 1rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   border: 2px solid #667eea;
-}
-
-.scan-input-row {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
 .scan-input {
-  flex: 1;
-  padding: 1rem;
-  border: none;
-  font-size: 1.2rem;
+  width: 100%;
+  padding: 0.8rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1.1rem;
   outline: none;
   font-family: 'Courier New', monospace;
 }
 
-.scan-input-row button {
+.scan-input:focus {
+  border-color: #667eea;
+}
+
+.scan-confirm-btn {
+  width: 100%;
+  padding: 0.8rem;
   background: #667eea;
   color: white;
   font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.scan-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ---- 扫码反馈 ---- */
@@ -1246,6 +1376,84 @@ button:disabled {
   color: #64748b;
   min-width: 3rem;
   text-align: right;
+}
+
+/* ---- 返回按钮 ---- */
+.back-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.btn-back {
+  padding: 0.5rem 1rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-back:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.back-hint {
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+
+/* ---- 重新开始按钮 ---- */
+.btn-danger {
+  background: #fee2e2 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fca5a5;
+  font-weight: 500;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #fecaca !important;
+}
+
+/* ---- 断点续扫 Banner ---- */
+.resume-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.resume-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.resume-info {
+  flex: 1;
+}
+
+.resume-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.4rem;
+}
+
+.resume-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #78350f;
 }
 
 /* ---- 完成消息 ---- */
@@ -1371,20 +1579,44 @@ button:disabled {
 }
 
 /* ---- 响应式 ---- */
-@media (max-width: 600px) {
+@media (max-width: 480px) {
   body { font-size: 14px; }
-  .section { margin: 0.8rem auto; padding: 0 0.8rem; }
-  .notice-card { padding: 0.8rem; }
-  .notice-meta { grid-template-columns: 1fr; }
+  .header { padding: 0.6rem 0.8rem; flex-wrap: wrap; gap: 0.4rem; }
+  .header h1 { font-size: 1rem; }
+  .header nav { gap: 0.15rem; width: 100%; justify-content: flex-end; }
+  .nav-btn { height: 30px; padding: 0 0.5rem; font-size: 0.78rem; }
+  .section { margin: 0.5rem auto; padding: 0 0.5rem; }
+  .notice-card { padding: 0.6rem; border-radius: 10px; }
+  .notice-header h3 { font-size: 1rem; }
+  .notice-meta { grid-template-columns: 1fr 1fr; gap: 0.3rem; font-size: 0.8rem; }
+  .items-preview h4 { font-size: 0.85rem; }
   .items-table { font-size: 0.7rem; }
-  .item-code { font-size: 1.1rem; }
-  .scan-input { font-size: 1rem; padding: 0.8rem; }
-  .status-title { font-size: 1rem; }
-  .header nav { gap: 0.15rem; }
-  .header nav a { padding: 0.3rem 0.5rem; font-size: 0.8rem; }
+  .items-table th, .items-table td { padding: 0.3rem 0.4rem; }
+  .items-table .code-cell { font-size: 0.7rem; word-break: break-all; }
+  .status-header { padding: 0.7rem; border-radius: 10px; }
+  .status-title { font-size: 0.95rem; }
+  .current-item { padding: 0.6rem; border-radius: 10px; }
+  .item-code { font-size: 1rem; }
+  .scan-input { font-size: 0.95rem; padding: 0.6rem; }
+  .scan-confirm-btn { font-size: 0.9rem; padding: 0.7rem; }
+  .btn-primary { padding: 0.7rem 1rem !important; font-size: 0.9rem !important; }
+  .scan-feedback { font-size: 0.85rem; padding: 0.6rem 0.8rem; }
+  .scan-detail { font-size: 0.75rem; }
+  .item-progress-info { font-size: 0.78rem; }
+  .item-progress-code { font-size: 0.72rem; }
+  .item-progress-name { font-size: 0.68rem; }
+  .form-row input { font-size: 0.9rem; padding: 0.6rem 0.8rem; }
+  .form-row button { font-size: 0.9rem; padding: 0.6rem 1rem; }
+  .sign-modal { padding: 1rem; border-radius: 12px; }
+  .sign-name-row { flex-direction: column; align-items: stretch; }
+  .sign-name-row label { margin-bottom: 0.2rem; }
 }
 
-@media (min-width: 900px) {
-  .section { margin: 1.5rem auto; padding: 0 2rem; }
+@media (max-width: 360px) {
+  body { font-size: 13px; }
+  .notice-meta { grid-template-columns: 1fr; }
+  .items-table th, .items-table td { padding: 0.25rem 0.3rem; }
+  .item-code { font-size: 0.9rem; }
+  .header h1 { font-size: 0.9rem; }
 }
 </style>

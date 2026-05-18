@@ -76,9 +76,9 @@ function parseQRCode(raw) {
 
 const insertConfirmation = db.prepare(`
   INSERT INTO shipping_confirmations 
-    (pick_list_id, site_ref, cust_num, cust_name, due_date, ship_code, total_cartons, total_items, operator)
+    (pick_list_id, site_ref, cust_num, cust_name, drop_cust_name, due_date, ship_code, total_cartons, total_items, operator)
   VALUES 
-    (@pick_list_id, @site_ref, @cust_num, @cust_name, @due_date, @ship_code, @total_cartons, @total_items, @operator)
+    (@pick_list_id, @site_ref, @cust_num, @cust_name, @drop_cust_name, @due_date, @ship_code, @total_cartons, @total_items, @operator)
 `);
 
 const insertItem = db.prepare(`
@@ -98,6 +98,7 @@ function startConfirmation(notice, items, operator = 'operator') {
       site_ref: notice.SiteRef,
       cust_num: notice.CustNum,
       cust_name: notice.cust_name || '',
+      drop_cust_name: notice.drop_cust_name || '',
       due_date: notice.due_date ? notice.due_date.toISOString().split('T')[0] : null,
       ship_code: notice.ship_code,
       total_cartons: parseInt(notice.total_cartons) || 0,

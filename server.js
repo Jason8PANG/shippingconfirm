@@ -12,7 +12,10 @@ const db = require('./src/config/db');
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer);
+const io = new Server(httpServer, {
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
+});
 
 // ---- 基础配置 ----
 app.set('view engine', 'ejs');
@@ -104,10 +107,18 @@ app.post('/api/confirmations/start', async (req, res) => {
         return res.json({ success: false, error: 'already_confirmed', message: 'This Shipping Notice has already been confirmed', confirmation: existing });
       } else if (existing.status === 'cancelled') {
         // 已取消，允许重新确认（删除旧记录）
-        confirmService.deleteConfirmationById(existing.id);
+        confirmService.deleteConfirmationById({ id: existing.id });
       } else {
         // 进行中/待确认
-        return res.json({ success: false, error: 'in_progress', message: 'This Shipping Notice is already being confirmed', confirmationId: existing.id, status: existing.status });
+        return res.json({ 
+          success: false, 
+          error: 'in_progress', 
+          message: 'This Shipping Notice is already being confirmed', 
+          confirmationId: existing.id, 
+          status: existing.status,
+          scanned: existing.scanned_boxes,
+          total: existing.total_cartons,
+        });
       }
     }
 
@@ -122,6 +133,29 @@ app.post('/api/confirmations/start', async (req, res) => {
   } catch (err) {
     console.error('开始出货确认失败:', err.message);
     res.json({ success: false, error: 'server_error', message: err.message });
+  }
+});
+
+// 按 PickListId 查找进行中的确认记录（断点续扫检查）
+app.get('/api/confirmations/by-picklist/:pickListId', (req, res) => {
+  try {
+    const record = confirmService.getConfirmationByPickListId.get({ pick_list_id: String(req.params.pickListId) });
+    if (!record) {
+      return res.json({ success: false });
+    }
+    res.json({ success: true, data: record });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// 取消确认记录（用于重新开始）
+app.post('/api/confirmations/:id/cancel', (req, res) => {
+  try {
+    confirmService.deleteConfirmationById({ id: req.params.id });
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
   }
 });
 
@@ -157,7 +191,7 @@ app.post('/api/scan', (req, res) => {
 // 历史记录查询（支持日期、客户、PickListId、站点过滤）
 app.get('/api/history', (req, res) => {
   try {
-    const { startDate, endDate, customer, pickListId, siteRef } = req.query;
+    const { startDate, endDate, customer, pickListId } = req.query;
     let confirmations;
     if (pickListId) {
       // 优先按 PickListId 精确查找
@@ -172,11 +206,6 @@ app.get('/api/history', (req, res) => {
     if (customer) {
       const kw = customer.toLowerCase();
       confirmations = confirmations.filter(c => (c.cust_name || '').toLowerCase().includes(kw));
-    }
-
-    // 站点过滤
-    if (siteRef) {
-      confirmations = confirmations.filter(c => c.site_ref === siteRef);
     }
 
     res.json({ success: true, data: confirmations });

@@ -37,6 +37,7 @@ async function getPendingShippingNotices() {
       SELECT 
         PickListId, SiteRef, CustNum, 
         drop_Cust_Name AS cust_name,
+        drop_Cust_Name AS drop_cust_name,
         due_date, Status, 
         total_cartons, Ship_Code AS ship_code,
         CreatedBy AS created_by,
@@ -59,6 +60,7 @@ async function getShippingNoticeById(id) {
       SELECT 
         PickListId, SiteRef, CustNum,
         drop_Cust_Name AS cust_name,
+        drop_Cust_Name AS drop_cust_name,
         due_date, Status, total_cartons,
         Ship_Code AS ship_code, Remark,
         CreatedBy AS created_by,
