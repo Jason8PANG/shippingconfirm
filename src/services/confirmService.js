@@ -111,15 +111,15 @@ function startConfirmation(notice, items, operator = 'operator') {
     for (const item of items) {
       insertItem.run({
         confirmation_id: confirmationId,
-        pick_list_ref_id: item.Sequence,
-        sequence: item.Sequence,
-        ref_num: item.RefNum,
+        pick_list_ref_id: item.sequence,
+        sequence: item.sequence,
+        ref_num: item.ref_num,
         item_code: item.item_code,
         item_name: item.item_name,
         qty_to_pick: item.qty_to_pick,
         um: item.um,
         planned_boxes: parseInt(item.planned_boxes) || 0,
-        wo_number: item.RefNum || null,
+        wo_number: item.ref_num || null,
         cust_po_num: item.cust_po_num || null,
       });
     }

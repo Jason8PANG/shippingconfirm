@@ -65,8 +65,8 @@
           <tbody>
             <template x-for="(item, idx) in items" :key="idx">
               <tr>
-                <td x-text="item.Sequence"></td>
-                <td x-text="item.RefNum"></td>
+                <td x-text="item.sequence"></td>
+                <td x-text="item.ref_num"></td>
                 <td class="code-cell" x-text="item.item_code"></td>
                 <td><span x-text="item.qty_to_pick"></span> <span x-text="item.um"></span></td>
                 <td class="highlight"><span x-text="item.planned_boxes"></span> <span x-text="t('cartons')"></span></td>

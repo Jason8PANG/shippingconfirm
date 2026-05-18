@@ -81,10 +81,10 @@ async function getShippingNoticeItems(id) {
     .input('id', sql.Int, parseInt(id))
     .query(`
       SELECT 
-        Sequence,
-        RefNum,
-        RefLineSuf,
-        RefRelease,
+        Sequence AS sequence,
+        RefNum AS ref_num,
+        RefLineSuf AS ref_line_suf,
+        RefRelease AS ref_release,
         item AS item_code,
         description AS item_name,
         QtyToPick AS qty_to_pick,
