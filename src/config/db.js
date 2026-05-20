@@ -90,4 +90,22 @@ try {
   db.exec(`ALTER TABLE shipping_confirmations ADD COLUMN drop_cust_name TEXT`);
 } catch (e) { /* 字段已存在则忽略 */ }
 
+try {
+  db.exec(`ALTER TABLE confirmation_items ADD COLUMN location TEXT`);
+} catch (e) { /* 字段已存在则忽略 */ }
+
+// 迁移：v2 比对模式 — 按工单+数量扫描
+try {
+  db.exec(`ALTER TABLE confirmation_items ADD COLUMN scanned_qty REAL DEFAULT 0`);
+} catch (e) { /* 字段已存在则忽略 */ }
+try {
+  db.exec(`ALTER TABLE scan_logs ADD COLUMN scanned_qty REAL DEFAULT 0`);
+} catch (e) { /* 字段已存在则忽略 */ }
+try {
+  db.exec(`ALTER TABLE shipping_confirmations ADD COLUMN total_ship_qty REAL DEFAULT 0`);
+} catch (e) { /* 字段已存在则忽略 */ }
+try {
+  db.exec(`ALTER TABLE shipping_confirmations ADD COLUMN total_scanned_qty REAL DEFAULT 0`);
+} catch (e) { /* 字段已存在则忽略 */ }
+
 module.exports = db;

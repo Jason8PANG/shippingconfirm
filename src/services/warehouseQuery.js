@@ -85,6 +85,8 @@ async function getShippingNoticeItems(id) {
         RefNum AS ref_num,
         RefLineSuf AS ref_line_suf,
         RefRelease AS ref_release,
+        Job_Order AS wo_number,
+        Location AS location,
         item AS item_code,
         description AS item_name,
         QtyToPick AS qty_to_pick,

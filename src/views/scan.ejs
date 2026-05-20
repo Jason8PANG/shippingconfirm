@@ -49,14 +49,14 @@
         <div><strong x-text="t('totalCartons')"></strong> <span x-text="notice?.total_cartons"></span> <span x-text="t('cartons')"></span></div>
       </div>
 
-      <!-- 品项列表（移入 notice-card 内保持宽度一致） -->
+      <!-- 品项预览列表 -->
       <div class="items-preview" x-show="items.length > 0">
         <h4><span x-text="t('itemsTitle')"></span> (<span x-text="items.length"></span> <span x-text="t('items')"></span>)</h4>
         <table class="items-table">
           <thead>
             <tr>
               <th x-text="t('colSeq')"></th>
-              <th x-text="t('colRefNum')"></th>
+              <th x-text="t('colWO')"></th>
               <th x-text="t('colPartNo')"></th>
               <th x-text="t('colQty')"></th>
               <th x-text="t('colCartons')"></th>
@@ -66,7 +66,7 @@
             <template x-for="(item, idx) in items" :key="idx">
               <tr>
                 <td x-text="item.sequence"></td>
-                <td x-text="item.ref_num"></td>
+                <td class="code-cell" x-text="item.ref_num"></td>
                 <td class="code-cell" x-text="item.item_code"></td>
                 <td><span x-text="item.qty_to_pick"></span> <span x-text="item.um"></span></td>
                 <td class="highlight"><span x-text="item.planned_boxes"></span> <span x-text="t('cartons')"></span></td>
@@ -83,10 +83,7 @@
       <div class="resume-info">
         <div class="resume-title" x-text="t('resumeTitle')"></div>
         <div class="resume-progress">
-          <div class="progress-bar progress-small">
-            <div class="progress-fill" :style="'width: ' + (inProgressTotal ? Math.round(inProgressScanned / inProgressTotal * 100) : 0) + '%'"></div>
-          </div>
-          <span x-text="inProgressScanned + ' / ' + inProgressTotal + ' ' + t('cartons')"></span>
+          <span x-text="t('scannedQty') + ': ' + (inProgressScanned || 0) + ' / ' + (inProgressTotal || 0)"></span>
         </div>
       </div>
     </div>
@@ -113,7 +110,7 @@
     </div>
   </section>
 
-  <!-- 扫码界面 -->
+  <!-- 比对界面 -->
   <section class="section" id="scan-section" x-show="confirmationId" x-cloak>
     
     <!-- 返回按钮 -->
@@ -127,142 +124,149 @@
     <!-- 状态头部 -->
     <div class="status-header" :class="{ 'status-completed': confirmation?.status === 'confirmed' || confirmation?.status === 'pending_signature' }">
       <div class="status-title">
-        <span x-show="confirmation?.status !== 'confirmed' && confirmation?.status !== 'pending_signature'" x-text="t('scanning')"></span>
+        <span x-show="confirmation?.status !== 'confirmed' && confirmation?.status !== 'pending_signature'" x-text="t('verifying')"></span>
         <span x-show="confirmation?.status === 'pending_signature'" x-text="t('pendingSignature')"></span>
         <span x-show="confirmation?.status === 'confirmed'" x-text="t('completed')"></span>
       </div>
-      <div class="status-progress">
-        <div class="progress-bar">
-          <div class="progress-fill" 
-               :style="'width: ' + getProgressPercent() + '%'"></div>
-        </div>
-        <span class="progress-text">
-          <span x-text="confirmation?.scanned_boxes || 0"></span> / 
-          <span x-text="confirmation?.total_cartons || 0"></span> <span x-text="t('cartons')"></span>
-        </span>
-      </div>
     </div>
 
-    <!-- 当前品项 -->
-    <div class="current-item" x-show="currentItem">
-      <div class="current-item-header">
-        <span class="item-label" x-text="t('currentItem')"></span>
-        <span class="item-badge" :class="currentItem?.status === 'completed' ? 'badge-done' : 'badge-active'">
-          <span x-text="currentItem?.status === 'completed' ? t('done') : t('inProgress')"></span>
-        </span>
+    <!-- 扫描输入区：工单 + 数量 -->
+    <div class="scan-input-area" x-show="confirmation?.status !== 'confirmed' && confirmation?.status !== 'pending_signature'">
+      <div class="scan-row">
+        <div class="scan-field">
+          <label x-text="t('woLabel')"></label>
+          <input type="text" 
+                 x-ref="woInput" 
+                 x-model="scanWO" 
+                 @keyup.enter="onWoEnter()"
+                 :placeholder="t('woPlaceholder')"
+                 class="scan-input"
+                 autocomplete="off"
+                 autocorrect="off"
+                 autocapitalize="off"
+                 spellcheck="false">
+        </div>
+        <div class="scan-field">
+          <label x-text="t('qtyLabel')"></label>
+          <input type="text" 
+                 x-ref="qtyInput" 
+                 x-model="scanQty" 
+                 @keyup.enter="doScan()"
+                 :placeholder="t('qtyPlaceholder')"
+                 class="scan-input"
+                 autocomplete="off"
+                 autocorrect="off"
+                 autocapitalize="off"
+                 spellcheck="false">
+        </div>
       </div>
-      <div class="current-item-body">
-        <div class="item-code" x-text="currentItem?.item_code"></div>
-        <div class="item-name" x-text="currentItem?.item_name"></div>
-        <div class="item-meta" x-show="currentItem?.wo_number">
-          <span x-text="t('wo')"></span>: <span x-text="currentItem?.wo_number"></span>
-        </div>
-        <div class="item-progress">
-          <span x-text="currentItem?.scanned_boxes || 0"></span> / 
-          <span x-text="currentItem?.planned_boxes"></span> <span x-text="t('cartons')"></span>
-          <span x-show="currentItem?.wo_number"> | <span x-text="t('expectBox')"></span> <span x-text="(currentItem?.scanned_boxes || 0) + 1"></span></span>
-        </div>
-        <div class="progress-bar progress-small">
-          <div class="progress-fill" 
-               :style="'width: ' + (currentItem ? ((currentItem.scanned_boxes || 0) / (currentItem.planned_boxes || 1) * 100) : 0) + '%'"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 扫码输入 -->
-    <div class="scan-input-area" x-show="!allCompleted">
-      <input type="text" 
-             x-ref="barcodeInput" 
-             x-model="barcode" 
-             @keyup.enter="doScan()" 
-             autofocus
-             :placeholder="t('scanPlaceholder')"
-             :disabled="allCompleted"
-             class="scan-input"
-             autocomplete="off"
-             autocorrect="off"
-             autocapitalize="off"
-             spellcheck="false">
-      <button class="scan-confirm-btn" @click="doScan()" :disabled="allCompleted || !barcode.trim()">
-        <span x-text="t('confirm')"></span>
-      </button>
     </div>
 
     <!-- 最近扫码结果 -->
     <div class="scan-feedback" x-show="lastScanResult" :class="lastScanResult?.success ? 'success' : 'error'" x-cloak>
       <template x-if="lastScanResult?.success">
         <div>
-          ✅ <span x-text="t('scanSuccess') + (lastScanResult?.confirm_id ? ' #' + lastScanResult.confirm_id : '')"></span>
-          <div class="scan-detail" x-show="lastScanResult?.qrInfo">
-            <div>
-              <template x-if="lastScanResult?.qrInfo?.boxNum">
-                📦 <code x-text="lastScanResult?.qrInfo?.boxNum + '/' + lastScanResult?.qrInfo?.totalBoxes + ' ' + t('cartons')"></code>
-              </template>
-              <template x-if="!lastScanResult?.qrInfo?.boxNum">
-                📦 <span x-text="t('singleCarton')"></span>
-              </template>
-              <span x-show="lastScanResult?.qrInfo?.dateCode"> | <span x-text="t('dateCode')"></span>: <span x-text="lastScanResult?.qrInfo?.dateCode"></span></span>
-              <span x-show="lastScanResult?.qrInfo?.wo"> | <span x-text="t('wo')"></span>: <span x-text="lastScanResult?.qrInfo?.wo"></span></span>
-            </div>
-            <template x-if="lastScanResult?.item">
-              <div>
-                <span x-text="t('progress')"></span>: <span x-text="lastScanResult?.item?.scanned_boxes"></span>/<span x-text="lastScanResult?.item?.planned_boxes"></span> <span x-text="t('cartons')"></span> | 
-                <span x-text="t('total')"></span>: <span x-text="lastScanResult?.progress?.totalScanned"></span>/<span x-text="lastScanResult?.progress?.totalPlanned"></span> <span x-text="t('cartons')"></span>
-              </div>
-            </template>
+          ✅ <span x-text="t('scanSuccess')"></span>
+          <span x-text="' — ' + t('wo') + ': ' + lastScanResult.wo + ', ' + t('qty') + ': ' + lastScanResult.scanned_qty"></span>
+          <span x-show="lastScanResult.over_qty" class="over-qty-warn"> ⚠️ <span x-text="t('overQty')"></span></span>
+          <div class="scan-detail">
+            <span x-text="t('verifiedRows') + ': ' + (lastScanResult.summary?.verifiedRows || 0) + '/' + (lastScanResult.summary?.totalRows || 0)"></span>
+            <span x-text="' | ' + t('totalVerifiedQty') + ': ' + (lastScanResult.summary?.totalScannedQty || 0)"></span>
           </div>
         </div>
       </template>
       <template x-if="!lastScanResult?.success">
         <div>
           ❌ <span x-text="lastScanResult?.error || t('scanFailed')"></span>
-          <div class="scan-detail" x-show="lastScanResult?.qrInfo && !lastScanResult?.duplicate">
-            <div>
-              <span x-text="t('detected')"></span>: <span x-text="t('partNo')"></span> <code x-text="lastScanResult?.qrInfo?.custPn || '-'"></code>
-              <span x-show="lastScanResult?.qrInfo?.wo"> | <span x-text="t('wo')"></span> <code x-text="lastScanResult?.qrInfo?.wo"></code></span>
-              <template x-if="lastScanResult?.qrInfo?.boxNum">
-                <span> | <span x-text="t('boxNo')"></span> <code x-text="lastScanResult?.qrInfo?.boxNum + '/' + lastScanResult?.qrInfo?.totalBoxes"></code></span>
-              </template>
-              <template x-if="!lastScanResult?.qrInfo?.boxNum">
-                <span> | <span x-text="t('singleCarton')"></span></span>
-              </template>
-            </div>
-            <div x-show="lastScanResult?.currentItem" style="margin-top: 4px;">
-              ⚠️ <span x-text="t('expected')"></span>: <span x-text="t('partNo')"></span> <code x-text="lastScanResult?.currentItem?.item_code"></code>
-              <span x-show="lastScanResult?.currentItem?.wo_number"> | <span x-text="t('wo')"></span> <code x-text="lastScanResult?.currentItem?.wo_number"></code></span>
-            </div>
-          </div>
+          <span x-show="lastScanResult?.wo" x-text="' — ' + t('wo') + ': ' + lastScanResult.wo"></span>
         </div>
       </template>
     </div>
 
-    <!-- 所有品项进度 -->
-    <div class="all-items-progress" x-show="items.length > 0">
-      <h4 x-text="t('allProgress')"></h4>
-      <div class="items-progress-list">
-        <template x-for="(item, idx) in items" :key="idx">
-          <div class="item-progress-row" :class="item.status">
-            <div class="item-progress-info">
-              <span class="item-progress-seq" x-text="item.sequence + '.'"></span>
-              <span class="item-progress-code" x-text="item.item_code"></span>
-              <span class="item-progress-name" x-text="item.item_name?.substring(0, 20)"></span>
+    <!-- 比对明细卡片 -->
+    <div class="compare-cards-wrap" x-show="items.length > 0">
+      <h4 x-text="t('compareTitle')"></h4>
+      <div class="compare-cards">
+        <template x-for="(item, idx) in items" :key="item.id || idx">
+          <div class="v-card" :class="{ 'v-card-done': getItemVerified(item), 'v-card-over': getItemOverQty(item) }">
+            <!-- 状态角标 -->
+            <div class="v-card-status-badge">
+              <template x-if="getItemVerified(item)"><span class="v-badge v-badge-ok">✅ Verified</span></template>
+              <template x-if="!getItemVerified(item) && item.scanned_qty > 0"><span class="v-badge v-badge-partial">⏳ Partial</span></template>
+              <template x-if="!getItemVerified(item) && !(item.scanned_qty > 0)"><span class="v-badge v-badge-pending">⏸ Pending</span></template>
             </div>
-            <div class="item-progress-bar-wrap">
-              <div class="progress-bar progress-xs">
-                <div class="progress-fill" 
-                     :style="'width: ' + (item.planned_boxes > 0 ? (item.scanned_boxes / item.planned_boxes * 100) : 0) + '%'"></div>
+            <!-- 字段列表 -->
+            <div class="v-field-list">
+              <div class="v-field-row">
+                <span class="v-field-label">SEQ</span>
+                <span class="v-field-val" x-text="item.sequence"></span>
               </div>
-              <span class="item-progress-count">
-                <span x-text="item.scanned_boxes"></span>/<span x-text="item.planned_boxes"></span>
-              </span>
+              <div class="v-field-row">
+                <span class="v-field-label">WO</span>
+                <span class="v-field-val v-field-code" x-text="item.wo_number || '-'"></span>
+              </div>
+              <div class="v-field-row">
+                <span class="v-field-label">PART</span>
+                <span class="v-field-val v-field-code v-field-part" x-text="item.item_code || '-'"></span>
+              </div>
+              <div class="v-field-row">
+                <span class="v-field-label">LOCATION</span>
+                <span class="v-field-val v-field-desc" x-text="item.location || '-'"></span>
+              </div>
+              <div class="v-field-divider"></div>
+              <div class="v-field-row">
+                <span class="v-field-label" x-text="t('colShipQty')"></span>
+                <span class="v-field-val v-field-num" x-text="item.qty_to_pick"></span>
+              </div>
+              <div class="v-field-row">
+                <span class="v-field-label" x-text="t('colVerifiedQty')"></span>
+                <span class="v-field-val v-field-num" :class="getItemVerified(item) ? 'text-green' : (item.scanned_qty > 0 ? 'text-yellow' : '')" x-text="item.scanned_qty || 0"></span>
+              </div>
+              <div class="v-field-row">
+                <span class="v-field-label" x-text="t('colUnverifiedQty')"></span>
+                <span class="v-field-val v-field-num" :class="getUnverifiedQty(item) > 0 ? 'text-red' : 'text-green'" x-text="getUnverifiedQty(item)"></span>
+              </div>
+              <div class="v-field-row">
+                <span class="v-field-label">BOX</span>
+                <span class="v-field-val v-field-num" x-text="item.scanned_boxes || 0"></span>
+              </div>
             </div>
           </div>
         </template>
       </div>
+      <!-- 汇总卡片 -->
+      <div class="v-card v-card-summary" x-show="summary">
+        <div class="v-field-list">
+          <div class="v-field-row v-field-row-bold">
+            <span class="v-field-label" x-text="t('totalShipQty')"></span>
+            <span class="v-field-val v-field-num" x-text="summary?.totalShipQty || 0"></span>
+          </div>
+          <div class="v-field-row v-field-row-bold">
+            <span class="v-field-label" x-text="t('totalVerifiedQty')"></span>
+            <span class="v-field-val v-field-num text-green" x-text="summary?.totalScannedQty || 0"></span>
+          </div>
+          <div class="v-field-row v-field-row-bold">
+            <span class="v-field-label" x-text="t('totalUnverifiedQty')"></span>
+            <span class="v-field-val v-field-num" :class="(summary?.totalUnverifiedQty || 0) > 0 ? 'text-red' : 'text-green'" x-text="summary?.totalUnverifiedQty || 0"></span>
+          </div>
+          <div class="v-field-divider"></div>
+          <div class="v-field-row">
+            <span class="v-field-label" x-text="t('verifiedRows')"></span>
+            <span class="v-field-val" :class="summary?.verifiedRows >= summary?.totalRows ? 'text-green' : 'text-yellow'">
+              <span x-text="(summary?.verifiedRows || 0) + '/' + (summary?.totalRows || 0)"></span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 数量不匹配提示 -->
+    <div class="mismatch-warning" x-show="qtyMismatch && confirmation?.status !== 'confirmed'" x-cloak>
+      ⚠️ <span x-text="t('qtyMismatch')"></span>
     </div>
 
     <!-- 签名提示 / 完成按钮 -->
-    <div class="action-row" x-show="allCompleted">
+    <div class="action-row" x-show="confirmation?.status === 'pending_signature' || confirmation?.status === 'confirmed'">
       <template x-if="confirmation?.status === 'pending_signature'">
         <div class="sign-prompt">
           <div class="sign-prompt-message">
@@ -318,7 +322,7 @@ const translations = {
   en: {
     // header
     siteTitle: 'Shipping Confirmation',
-    navScan: 'Scan',
+    navScan: 'Verify',
     navHistory: 'History',
 
     // search
@@ -339,44 +343,45 @@ const translations = {
     itemsTitle: 'Shipping Items',
     items: 'items',
     colSeq: 'Seq',
+    colWO: 'WO',
     colRefNum: 'Customer Order',
     colPartNo: 'Part No',
     colQty: 'Qty',
     colCartons: 'Cartons',
-    startConfirm: '🚀 Start Confirmation',
+    startConfirm: '🚀 Start Verify',
     starting: '⏳ Starting...',
     cancel: 'Cancel',
 
-    // scanning
-    scanning: '📷 Scanning...',
-    completed: '✅ Confirmation Complete!',
-    currentItem: 'Current Item',
-    done: 'Completed',
-    inProgress: 'In Progress',
-    wo: 'WO',
-    expectBox: 'Expect Box',
-    scanPlaceholder: '📷 Scan carton barcode...',
-    confirm: 'Confirm',
+    // compare table
+    compareTitle: 'Verification Detail',
+    colShipQty: 'Ship Qty',
+    colVerifiedQty: 'Verified',
+    colUnverifiedQty: 'Unverified',
+    colVerifiedBoxes: 'Boxes',
+    verifiedRows: 'Verified Rows',
+    totalShipQty: 'Ship Total',
+    totalVerifiedQty: 'Verified Total',
+    totalUnverifiedQty: 'Unverified Total',
+    total: 'Total',
 
-    // feedback
+    // scanning
+    verifying: '🔍 Verifying...',
+    completed: '✅ Confirmation Complete!',
+    wo: 'WO',
+    qty: 'Qty',
+    woLabel: 'Work Order',
+    woPlaceholder: '📷 Scan WO barcode...',
+    qtyLabel: 'Quantity',
+    qtyPlaceholder: '📷 Scan quantity barcode...',
+    confirm: '✓ Submit',
     scanSuccess: 'Scan OK!',
     scanFailed: 'Scan Failed',
-    singleCarton: 'Single carton',
-    dateCode: 'Date Code',
-    progress: 'Progress',
-    total: 'Total',
-    detected: 'Detected',
-    partNo: 'Part No',
-    boxNo: 'Box#',
-    expected: 'Expected',
-    allProgress: 'All Items Progress',
-    notifyDone: 'Shipping Notice',
-    confirmed: 'confirmed!',
-    nextSearch: '🔍 Next Search',
+    overQty: 'Over quantity!',
+    qtyMismatch: 'Quantity mismatch! Cannot complete verification until all quantities match.',
 
     // signature
     pendingSignature: '📝 Signature Required',
-    signRequired: 'All cartons scanned! Please sign to complete confirmation.',
+    signRequired: 'All quantities verified! Please sign to complete confirmation.',
     openSignPad: '✍️ Sign to Confirm',
     signTitle: 'Confirmation Signature',
     signerName: 'Signer Name',
@@ -385,17 +390,18 @@ const translations = {
     confirmSignature: '✍️ Confirm & Save',
     submitting: 'Saving...',
     signedBy: 'Signed by:',
+    scannedQty: 'Scanned Qty',
 
     // resume & back
     backToNotice: 'Back',
     backHint: 'Progress is saved, you can resume later',
-    resumeTitle: 'This notice has unfinished scan progress',
-    resumeConfirm: '▶️ Resume Scanning',
+    resumeTitle: 'This notice has unfinished verification progress',
+    resumeConfirm: '▶️ Resume Verify',
     restartConfirm: '🔄 Restart',
   },
   zh: {
     siteTitle: '出货确认',
-    navScan: '扫码确认',
+    navScan: '比对确认',
     navHistory: '历史记录',
     searchTitle: '查询出货通知',
     searchPlaceholder: '输入 PickListId 或扫码（如 182473）',
@@ -412,40 +418,39 @@ const translations = {
     itemsTitle: '出货品项明细',
     items: '项',
     colSeq: '序号',
+    colWO: '工单号',
     colRefNum: '销售订单',
-    colPartNo: '品号',
+    colPartNo: '料号',
     colQty: '数量',
     colCartons: '箱数',
-    startConfirm: '🚀 开始确认',
+    startConfirm: '🚀 开始比对',
     starting: '⏳ 启动中...',
     cancel: '取消',
-    scanning: '📷 扫码中...',
+    compareTitle: '比对明细',
+    colShipQty: '出货数量',
+    colVerifiedQty: '已核对',
+    colUnverifiedQty: '未核对',
+    colVerifiedBoxes: '已核对箱数',
+    verifiedRows: '已核对行数',
+    totalShipQty: '出货总量',
+    totalVerifiedQty: '核对总量',
+    totalUnverifiedQty: '未核对总量',
+    total: '合计',
+    verifying: '🔍 比对中...',
     completed: '✅ 确认完成！',
-    currentItem: '当前品项',
-    done: '已完成',
-    inProgress: '进行中',
     wo: '工单',
-    expectBox: '期望第',
-    scanPlaceholder: '📷 扫描外箱条码...',
-    confirm: '确认',
-    scanSuccess: '扫码成功！',
-    scanFailed: '扫码失败',
-    singleCarton: '单箱',
-    dateCode: '生产日期',
-    progress: '进度',
-    total: '总计',
-    detected: '识别',
-    partNo: '品号',
-    boxNo: '箱号',
-    expected: '期望',
-    allProgress: '全部品项进度',
-    notifyDone: '出货通知',
-    confirmed: '确认完成！',
-    nextSearch: '🔍 查询下一个',
-
-    // signature
+    qty: '数量',
+    woLabel: '工单号',
+    woPlaceholder: '📷 扫描工单条码...',
+    qtyLabel: '数量',
+    qtyPlaceholder: '📷 扫描数量条码...',
+    confirm: '✓ 提交',
+    scanSuccess: '提交成功！',
+    scanFailed: '提交失败',
+    overQty: '数量超出！',
+    qtyMismatch: '数量不匹配！所有数量匹配后才能完成比对。',
     pendingSignature: '📝 需要签名确认',
-    signRequired: '所有箱已扫码完成！请签名以完成确认。',
+    signRequired: '所有数量已核对！请签名以完成确认。',
     openSignPad: '✍️ 签名确认',
     signTitle: '确认签名',
     signerName: '签名者',
@@ -454,12 +459,11 @@ const translations = {
     confirmSignature: '✍️ 确认保存',
     submitting: '保存中...',
     signedBy: '签名者：',
-
-    // resume & back
+    scannedQty: '已扫数量',
     backToNotice: '返回',
-    backHint: '进度已保存，可稍后继续扫码',
-    resumeTitle: '该出货通知有未完成的扫码进度',
-    resumeConfirm: '▶️ 继续扫码',
+    backHint: '进度已保存，可稍后继续',
+    resumeTitle: '该出货通知有未完成的比对进度',
+    resumeConfirm: '▶️ 继续比对',
     restartConfirm: '🔄 重新开始',
   },
 };
@@ -493,8 +497,10 @@ function scannerApp() {
 
     confirmationId: null,
     confirmation: null,
-    barcode: '',
-    allCompleted: false,
+    scanWO: '',
+    scanQty: '',
+    qtyMismatch: false,
+    summary: null,
 
     // 进行中的已有确认（断点续扫）
     inProgressId: null,
@@ -523,11 +529,10 @@ function scannerApp() {
       this.socket.on('connect', () => console.log('[Socket] Connected'));
       this.socket.on('disconnect', () => console.log('[Socket] Disconnected'));
 
-      // 处理来自历史记录页的 resumeId 参数（继续扫码）
+      // 处理来自历史记录页的 resumeId 参数
       const urlParams = new URLSearchParams(window.location.search);
       const resumeId = urlParams.get('resumeId');
       if (resumeId) {
-        // 清除 URL 参数，避免刷新重复触发
         window.history.replaceState({}, '', '/');
         this.resumeConfirmation(parseInt(resumeId));
       }
@@ -564,8 +569,8 @@ function scannerApp() {
             const chkJson = await chkRes.json();
             if (chkJson.success && chkJson.data && (chkJson.data.status === 'in_progress' || chkJson.data.status === 'pending_signature')) {
               this.inProgressId = chkJson.data.id;
-              this.inProgressScanned = chkJson.data.scanned_boxes || 0;
-              this.inProgressTotal = chkJson.data.total_cartons || 0;
+              this.inProgressScanned = chkJson.data.total_scanned_qty || 0;
+              this.inProgressTotal = chkJson.data.total_ship_qty || 0;
             }
           } catch (e) {}
 
@@ -573,14 +578,13 @@ function scannerApp() {
           this.notice = null;
           this.items = [];
           if (json.error === 'not_found') {
-            // 仓库查不到，也检查本地续扫
             try {
               const chkRes = await fetch(`/api/confirmations/by-picklist/${encodeURIComponent(this.searchInput.trim())}`);
               const chkJson = await chkRes.json();
               if (chkJson.success && chkJson.data && (chkJson.data.status === 'in_progress' || chkJson.data.status === 'pending_signature')) {
                 this.inProgressId = chkJson.data.id;
-                this.inProgressScanned = chkJson.data.scanned_boxes || 0;
-                this.inProgressTotal = chkJson.data.total_cartons || 0;
+                this.inProgressScanned = chkJson.data.total_scanned_qty || 0;
+                this.inProgressTotal = chkJson.data.total_ship_qty || 0;
                 return;
               }
             } catch (e) {}
@@ -615,9 +619,12 @@ function scannerApp() {
             id: json.confirmationId,
             total_cartons: parseInt(json.notice.total_cartons),
             scanned_boxes: 0,
+            total_scanned_qty: 0,
+            total_ship_qty: json.items.reduce((s, i) => s + (parseFloat(i.qty_to_pick) || 0), 0),
             status: 'in_progress',
           };
-          this.items = json.items;
+          this.items = json.items.map(i => ({ ...i, scanned_qty: 0, scanned_boxes: 0 }));
+          this.summary = this.calcSummary(this.items);
           this._enterScanMode(json.confirmationId);
         } else {
           if (json.error === 'already_confirmed') {
@@ -631,7 +638,6 @@ function scannerApp() {
             this.notice = null;
             this.items = [];
           } else if (json.error === 'in_progress' && json.confirmationId) {
-            // 已有进行中记录 → 自动切换到 resume 模式
             this.inProgressId = json.confirmationId;
             this.inProgressScanned = json.scanned || 0;
             this.inProgressTotal = json.total || 0;
@@ -646,7 +652,6 @@ function scannerApp() {
       }
     },
 
-    // 继续扫码（断点续扫）
     async resumeConfirmation(confirmationId) {
       this.starting = true;
       try {
@@ -655,11 +660,12 @@ function scannerApp() {
         if (json.success) {
           this.confirmation = json.data.confirmation;
           this.items = json.data.items;
-          this.allCompleted = this.confirmation.status === 'pending_signature' || this.confirmation.status === 'confirmed';
-          this._enterScanMode(confirmationId);
+          this.summary = this.calcSummary(this.items);
+          this.qtyMismatch = this.checkQtyMismatch();
           if (this.confirmation.status === 'pending_signature') {
             this.$nextTick(() => this.initSignaturePad());
           }
+          this._enterScanMode(confirmationId);
         } else {
           alert(json.error || 'Resume failed');
         }
@@ -670,7 +676,6 @@ function scannerApp() {
       }
     },
 
-    // 重新开始（删除旧记录后重载页面）
     async restartConfirmation() {
       const msg = this.lang === 'zh'
         ? '确认要丢弃已有进度，从头开始吗？'
@@ -684,13 +689,11 @@ function scannerApp() {
       location.reload();
     },
 
-    // 进入扫码模式（公共逻辑）
     _enterScanMode(confirmationId) {
       this.confirmationId = confirmationId;
       this.inProgressId = null;
-      this.allCompleted = this.allCompleted || false;
       this.$nextTick(() => {
-        if (this.$refs.barcodeInput && !this.allCompleted) this.$refs.barcodeInput.focus();
+        if (this.$refs.woInput) this.$refs.woInput.focus();
       });
       this.socket.emit('join-confirmation', confirmationId);
       if (this._scanResultHandler) this.socket.off('scan-result', this._scanResultHandler);
@@ -701,31 +704,52 @@ function scannerApp() {
       this.socket.on('progress-update', this._progressUpdateHandler);
     },
 
-    // 返回出货通知详情（保留 confirmationId 进度）
     backToNotice() {
       if (this.socket) {
         if (this._scanResultHandler) this.socket.off('scan-result', this._scanResultHandler);
         if (this._progressUpdateHandler) this.socket.off('progress-update', this._progressUpdateHandler);
       }
-      // 记录当前进度 id 供 resume banner 显示
       if (this.confirmationId && this.confirmation?.status !== 'confirmed') {
         this.inProgressId = this.confirmationId;
-        this.inProgressScanned = this.confirmation?.scanned_boxes || 0;
-        this.inProgressTotal = this.confirmation?.total_cartons || 0;
+        this.inProgressScanned = this.confirmation?.total_scanned_qty || 0;
+        this.inProgressTotal = this.confirmation?.total_ship_qty || 0;
       }
       this.confirmationId = null;
       this.confirmation = null;
-      this.barcode = '';
+      this.scanWO = '';
+      this.scanQty = '';
       this.lastScanResult = null;
-      this.allCompleted = false;
+      this.qtyMismatch = false;
+      this.summary = null;
       this.showSignModal = false;
     },
 
+    onWoEnter() {
+      // 工单回车 → 焦点跳到数量框
+      if (this.scanWO.trim()) {
+        this.$nextTick(() => {
+          if (this.$refs.qtyInput) this.$refs.qtyInput.focus();
+        });
+      }
+    },
+
     doScan() {
-      const barcode = this.barcode.trim();
-      if (!barcode || !this.confirmationId) return;
-      this.socket.emit('scan-barcode', { confirmationId: this.confirmationId, barcode });
-      this.barcode = '';
+      const wo = this.scanWO.trim();
+      const qty = this.scanQty.trim();
+      if (!wo || !qty || !this.confirmationId) return;
+
+      this.socket.emit('scan-barcode', { 
+        confirmationId: this.confirmationId, 
+        woNumber: wo, 
+        quantity: qty 
+      });
+
+      // 清空输入，焦点回到工单框
+      this.scanWO = '';
+      this.scanQty = '';
+      this.$nextTick(() => {
+        if (this.$refs.woInput) this.$refs.woInput.focus();
+      });
     },
 
     handleScanResult(result) {
@@ -733,21 +757,80 @@ function scannerApp() {
       this.playFeedback(result.success);
       if (this.feedbackTimer) clearTimeout(this.feedbackTimer);
       this.feedbackTimer = setTimeout(() => { this.lastScanResult = null; }, 3000);
-      if (result.success) {
-        this.$nextTick(() => {
-          if (this.$refs.barcodeInput && !this.allCompleted) this.$refs.barcodeInput.focus();
-        });
-      }
     },
 
     handleProgressUpdate(data) {
       this.confirmation = data.confirmation;
       this.items = data.items;
-      this.allCompleted = data.confirmation.status === 'pending_signature' || data.confirmation.status === 'confirmed';
+      this.summary = data.summary || this.calcSummary(data.items);
+      this.qtyMismatch = this.checkQtyMismatch();
       if (data.confirmation.status === 'pending_signature') {
         this.$nextTick(() => this.initSignaturePad());
       }
       if (data.confirmation.status === 'confirmed') this.playAllComplete();
+    },
+
+    // 辅助方法：计算前端 summary
+    calcSummary(items) {
+      if (!items || !items.length) return null;
+      let totalShipQty = 0, totalScannedQty = 0, verifiedRows = 0, totalScannedBoxes = 0;
+      const totalRows = items.length;
+
+      // 按 WO 分组
+      const woGroups = {};
+      for (const item of items) {
+        const woKey = item.wo_number || `__no_wo_${item.id}`;
+        if (!woGroups[woKey]) woGroups[woKey] = [];
+        woGroups[woKey].push(item);
+        totalShipQty += parseFloat(item.qty_to_pick) || 0;
+        totalScannedQty += parseFloat(item.scanned_qty) || 0;
+        totalScannedBoxes += parseInt(item.scanned_boxes) || 0;
+      }
+
+      for (const [woKey, group] of Object.entries(woGroups)) {
+        const groupTotalShip = group.reduce((s, i) => s + (parseFloat(i.qty_to_pick) || 0), 0);
+        const groupTotalScanned = group.reduce((s, i) => s + (parseFloat(i.scanned_qty) || 0), 0);
+        if (groupTotalScanned >= groupTotalShip) {
+          verifiedRows += group.length;
+        } else {
+          for (const item of group) {
+            if ((parseFloat(item.scanned_qty) || 0) >= (parseFloat(item.qty_to_pick) || 0)) {
+              verifiedRows++;
+            }
+          }
+        }
+      }
+
+      return {
+        totalShipQty: Math.round(totalShipQty * 100) / 100,
+        totalScannedQty: Math.round(totalScannedQty * 100) / 100,
+        totalUnverifiedQty: Math.round((totalShipQty - totalScannedQty) * 100) / 100,
+        verifiedRows,
+        totalRows,
+        totalScannedBoxes,
+      };
+    },
+
+    // 检查数量是否不匹配（总量对比）
+    checkQtyMismatch() {
+      if (!this.items || !this.items.length) return false;
+      const totalShip = this.items.reduce((s, i) => s + (parseFloat(i.qty_to_pick) || 0), 0);
+      const totalScanned = this.items.reduce((s, i) => s + (parseFloat(i.scanned_qty) || 0), 0);
+      return Math.abs(totalScanned - totalShip) > 0.001;
+    },
+
+    getItemVerified(item) {
+      return (parseFloat(item.scanned_qty) || 0) >= (parseFloat(item.qty_to_pick) || 0);
+    },
+
+    getItemOverQty(item) {
+      return (parseFloat(item.scanned_qty) || 0) > (parseFloat(item.qty_to_pick) || 0);
+    },
+
+    getUnverifiedQty(item) {
+      const ship = parseFloat(item.qty_to_pick) || 0;
+      const scanned = parseFloat(item.scanned_qty) || 0;
+      return Math.round((ship - scanned) * 100) / 100;
     },
 
     playFeedback(success) {
@@ -771,17 +854,6 @@ function scannerApp() {
           osc.stop(ctx.currentTime + i * 0.15 + 0.2);
         });
       } catch (e) {}
-    },
-
-    getProgressPercent() {
-      if (!this.confirmation?.total_cartons) return 0;
-      return Math.round((this.confirmation.scanned_boxes / this.confirmation.total_cartons) * 100);
-    },
-
-    get currentItem() {
-      if (!this.items || this.items.length === 0) return null;
-      const current = this.items.find(i => i.status !== 'completed');
-      return current || this.items[this.items.length - 1];
     },
 
     formatDate(dateStr) {
@@ -854,8 +926,10 @@ function scannerApp() {
       this.items = [];
       this.confirmationId = null;
       this.confirmation = null;
-      this.barcode = '';
-      this.allCompleted = false;
+      this.scanWO = '';
+      this.scanQty = '';
+      this.qtyMismatch = false;
+      this.summary = null;
       this.lastScanResult = null;
       this.searchError = '';
       this.searchErrorType = '';
@@ -902,12 +976,6 @@ body {
 }
 
 .header h1 { font-size: 1.2rem; font-weight: 600; }
-
-.header nav {
-  display: flex;
-  gap: 0.3rem;
-  align-items: center;
-}
 
 .header nav {
   display: flex;
@@ -1135,102 +1203,35 @@ button:disabled {
   margin-bottom: 0.5rem;
 }
 
-.status-progress {
+/* ---- 汇总统计行 ---- */
+.summary-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.summary-item {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.4rem;
 }
 
-.progress-text {
-  font-size: 0.9rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* ---- 进度条 ---- */
-.progress-bar {
-  flex: 1;
-  height: 12px;
-  background: rgba(255,255,255,0.2);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.progress-small { height: 8px; }
-.progress-xs { height: 6px; flex: 1; }
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #10b981, #34d399);
-  border-radius: 6px;
-  transition: width 0.3s ease;
-}
-
-/* ---- 当前品项 ---- */
-.current-item {
-  background: white;
-  border-radius: 12px;
-  padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  margin-bottom: 1rem;
-  border-left: 4px solid #667eea;
-}
-
-.current-item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.item-label {
+.summary-label {
+  opacity: 0.8;
   font-size: 0.8rem;
-  color: #94a3b8;
-  font-weight: 600;
-  text-transform: uppercase;
 }
 
-.item-badge {
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 600;
-}
-
-.badge-done { background: #dcfce7; color: #15803d; }
-.badge-active { background: #dbeafe; color: #1d4ed8; }
-
-.current-item-body {
+.summary-value {
+  font-weight: 700;
   font-size: 1rem;
 }
 
-.item-code {
-  font-family: 'Courier New', monospace;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #1d4ed8;
-  margin-bottom: 0.2rem;
-}
+.text-green { color: #34d399; }
+.text-yellow { color: #fbbf24; }
+.text-red { color: #f87171; }
 
-.item-name {
-  color: #475569;
-  margin-bottom: 0.3rem;
-}
-
-.item-meta {
-  font-size: 0.85rem;
-  color: #64748b;
-  margin-bottom: 0.3rem;
-}
-
-.item-progress {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #7c3aed;
-  margin-bottom: 0.3rem;
-}
-
-/* ---- 扫码输入 ---- */
+/* ---- 扫码输入区 ---- */
 .scan-input-area {
   background: white;
   border-radius: 12px;
@@ -1238,9 +1239,27 @@ button:disabled {
   margin-bottom: 1rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   border: 2px solid #667eea;
+}
+
+.scan-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.scan-field {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.2rem;
+}
+
+.scan-field label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .scan-input {
@@ -1255,23 +1274,6 @@ button:disabled {
 
 .scan-input:focus {
   border-color: #667eea;
-}
-
-.scan-confirm-btn {
-  width: 100%;
-  padding: 0.8rem;
-  background: #667eea;
-  color: white;
-  font-weight: 600;
-  font-size: 1rem;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.scan-confirm-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* ---- 扫码反馈 ---- */
@@ -1304,78 +1306,162 @@ button:disabled {
   margin-top: 0.3rem;
 }
 
-.scan-detail code {
-  background: rgba(0,0,0,0.05);
-  padding: 0.1rem 0.3rem;
-  border-radius: 3px;
+.over-qty-warn {
+  color: #dc2626;
+  font-weight: 600;
 }
 
-/* ---- 全部品项进度 ---- */
-.all-items-progress {
+/* ---- 比对明细卡片 ---- */
+.compare-cards-wrap {
   background: white;
   border-radius: 12px;
   padding: 1rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.items-progress-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.compare-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.5rem;
 }
 
-.item-progress-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.5rem;
-  border-radius: 6px;
+.v-card {
   background: #f8fafc;
+  border-radius: 10px;
+  padding: 0.75rem;
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.2s;
 }
 
-.item-progress-row.completed {
+.v-card-done {
   background: #f0fdf4;
-  opacity: 0.7;
+  border-color: #86efac;
 }
 
-.item-progress-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+.v-card-over {
+  background: #fff7ed;
+  border-color: #fdba74;
 }
 
-.item-progress-seq {
-  color: #94a3b8;
+.v-card-summary {
+  margin-top: 0.6rem;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-color: #cbd5e1;
+}
+
+/* 状态角标 */
+.v-card-status-badge {
+  margin-bottom: 0.5rem;
+}
+
+.v-badge {
+  display: inline-block;
+  font-size: 0.7rem;
   font-weight: 600;
-  min-width: 1.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
 }
 
-.item-progress-code {
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  color: #1d4ed8;
-  font-size: 0.8rem;
+.v-badge-ok {
+  background: #dcfce7;
+  color: #15803d;
 }
 
-.item-progress-name {
-  color: #475569;
-  font-size: 0.75rem;
-  flex: 1;
+.v-badge-partial {
+  background: #fef3c7;
+  color: #a16207;
 }
 
-.item-progress-bar-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.item-progress-count {
-  font-size: 0.75rem;
-  font-weight: 600;
+.v-badge-pending {
+  background: #f1f5f9;
   color: #64748b;
-  min-width: 3rem;
+}
+
+/* 字段列表 */
+.v-field-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.v-field-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.22rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 0.5rem;
+}
+
+.v-field-row:last-child {
+  border-bottom: none;
+}
+
+.v-field-row-bold .v-field-label,
+.v-field-row-bold .v-field-val {
+  font-weight: 700;
+}
+
+.v-field-label {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.v-field-val {
+  font-size: 0.8rem;
+  color: #1e293b;
+  font-weight: 600;
   text-align: right;
+  word-break: break-all;
+}
+
+.v-field-code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: #1d4ed8;
+}
+
+.v-field-part {
+  color: #7c3aed;
+}
+
+.v-field-desc {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 500;
+  text-align: right;
+  max-width: 130px;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.v-field-num {
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.v-field-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 0.3rem 0;
+}
+
+/* ---- 数量不匹配警告 ---- */
+.mismatch-warning {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border: 1px solid #fcd34d;
 }
 
 /* ---- 返回按钮 ---- */
@@ -1595,16 +1681,17 @@ button:disabled {
   .items-table .code-cell { font-size: 0.7rem; word-break: break-all; }
   .status-header { padding: 0.7rem; border-radius: 10px; }
   .status-title { font-size: 0.95rem; }
-  .current-item { padding: 0.6rem; border-radius: 10px; }
-  .item-code { font-size: 1rem; }
+  .summary-row { font-size: 0.75rem; gap: 0.6rem; }
+  .summary-value { font-size: 0.85rem; }
+  .scan-row { flex-direction: column; gap: 0.4rem; }
   .scan-input { font-size: 0.95rem; padding: 0.6rem; }
-  .scan-confirm-btn { font-size: 0.9rem; padding: 0.7rem; }
+  .compare-table { font-size: 0.7rem; }
+  .compare-table th { font-size: 0.65rem; padding: 0.35rem 0.3rem; }
+  .compare-table td { padding: 0.35rem 0.3rem; }
+  .compare-table .code-cell { font-size: 0.65rem; }
   .btn-primary { padding: 0.7rem 1rem !important; font-size: 0.9rem !important; }
   .scan-feedback { font-size: 0.85rem; padding: 0.6rem 0.8rem; }
   .scan-detail { font-size: 0.75rem; }
-  .item-progress-info { font-size: 0.78rem; }
-  .item-progress-code { font-size: 0.72rem; }
-  .item-progress-name { font-size: 0.68rem; }
   .form-row input { font-size: 0.9rem; padding: 0.6rem 0.8rem; }
   .form-row button { font-size: 0.9rem; padding: 0.6rem 1rem; }
   .sign-modal { padding: 1rem; border-radius: 12px; }
@@ -1616,7 +1703,8 @@ button:disabled {
   body { font-size: 13px; }
   .notice-meta { grid-template-columns: 1fr; }
   .items-table th, .items-table td { padding: 0.25rem 0.3rem; }
-  .item-code { font-size: 0.9rem; }
   .header h1 { font-size: 0.9rem; }
+  .compare-table { font-size: 0.65rem; }
+  .compare-table th, .compare-table td { padding: 0.25rem 0.2rem; }
 }
 </style>

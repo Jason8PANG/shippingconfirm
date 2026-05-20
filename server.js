@@ -30,10 +30,10 @@ io.on('connection', (socket) => {
   console.log(`[Socket] 客户端连接: ${socket.id}`);
 
   socket.on('scan-barcode', async (data) => {
-    const { confirmationId, barcode } = data;
-    if (!confirmationId || !barcode) return;
+    const { confirmationId, woNumber, quantity } = data;
+    if (!confirmationId || !woNumber || !quantity) return;
 
-    const result = confirmService.processScan(confirmationId, barcode.trim());
+    const result = confirmService.processScan(confirmationId, woNumber.trim(), quantity);
 
     // 广播扫码结果给房间内所有客户端
     io.to(String(confirmationId)).emit('scan-result', result);
@@ -42,7 +42,8 @@ io.on('connection', (socket) => {
       // 广播最新进度
       const confirmation = confirmService.getConfirmationById.get({ id: confirmationId });
       const items = confirmService.getItemsByConfirmationId.all({ id: confirmationId });
-      io.to(String(confirmationId)).emit('progress-update', { confirmation, items });
+      const summary = confirmService.buildSummary(items);
+      io.to(String(confirmationId)).emit('progress-update', { confirmation, items, summary });
     }
   });
 
@@ -107,7 +108,7 @@ app.post('/api/confirmations/start', async (req, res) => {
         return res.json({ success: false, error: 'already_confirmed', message: 'This Shipping Notice has already been confirmed', confirmation: existing });
       } else if (existing.status === 'cancelled') {
         // 已取消，允许重新确认（删除旧记录）
-        confirmService.deleteConfirmationById({ id: existing.id });
+        confirmService.deleteConfirmationById.run({ id: existing.id });
       } else {
         // 进行中/待确认
         return res.json({ 
@@ -152,7 +153,7 @@ app.get('/api/confirmations/by-picklist/:pickListId', (req, res) => {
 // 取消确认记录（用于重新开始）
 app.post('/api/confirmations/:id/cancel', (req, res) => {
   try {
-    confirmService.deleteConfirmationById({ id: req.params.id });
+    confirmService.deleteConfirmationById.run({ id: req.params.id });
     res.json({ success: true });
   } catch (err) {
     res.json({ success: false, error: err.message });
@@ -176,11 +177,11 @@ app.get('/api/confirmations/:id', (req, res) => {
 // 扫码接口（HTTP fallback，实际使用以 Socket.IO 为主）
 app.post('/api/scan', (req, res) => {
   try {
-    const { confirmationId, barcode } = req.body;
-    if (!confirmationId || !barcode) {
+    const { confirmationId, woNumber, quantity } = req.body;
+    if (!confirmationId || !woNumber || !quantity) {
       return res.json({ success: false, error: '缺少参数' });
     }
-    const result = confirmService.processScan(confirmationId, barcode.trim());
+    const result = confirmService.processScan(confirmationId, woNumber.trim(), quantity);
     res.json(result);
   } catch (err) {
     console.error('扫码处理失败:', err.message);
@@ -188,10 +189,10 @@ app.post('/api/scan', (req, res) => {
   }
 });
 
-// 历史记录查询（支持日期、客户、PickListId、站点过滤）
+// 历史记录查询（支持日期、客户、PickListId、站点、状态过滤）
 app.get('/api/history', (req, res) => {
   try {
-    const { startDate, endDate, customer, pickListId } = req.query;
+    const { startDate, endDate, customer, pickListId, site, status } = req.query;
     let confirmations;
     if (pickListId) {
       // 优先按 PickListId 精确查找
@@ -206,6 +207,16 @@ app.get('/api/history', (req, res) => {
     if (customer) {
       const kw = customer.toLowerCase();
       confirmations = confirmations.filter(c => (c.cust_name || '').toLowerCase().includes(kw));
+    }
+
+    // 站点过滤
+    if (site) {
+      confirmations = confirmations.filter(c => c.site_ref === site);
+    }
+
+    // 状态过滤
+    if (status) {
+      confirmations = confirmations.filter(c => c.status === status);
     }
 
     res.json({ success: true, data: confirmations });

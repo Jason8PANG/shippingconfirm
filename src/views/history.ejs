@@ -28,6 +28,19 @@
              :placeholder="t('searchCustomer')" 
              @keyup.enter="loadHistory()" 
              class="search-input">
+      <select x-model="filterSite" @change="loadHistory()" class="filter-select">
+        <option value="" x-text="t('allSites')"></option>
+        <option value="310">310</option>
+        <option value="330">330</option>
+        <option value="410">410</option>
+      </select>
+      <select x-model="filterStatus" @change="loadHistory()" class="filter-select">
+        <option value="" x-text="t('allStatus')"></option>
+        <option value="in_progress" x-text="t('inProgress')"></option>
+        <option value="pending_signature" x-text="t('awaitingSign')"></option>
+        <option value="confirmed" x-text="t('done')"></option>
+        <option value="cancelled" x-text="t('cancelled')"></option>
+      </select>
       <button @click="loadHistory()" :disabled="loading">
         <span x-show="!loading" x-text="t('searchBtn')"></span>
         <span x-show="loading" x-text="t('searching')"></span>
@@ -53,6 +66,7 @@
               <template x-if="record.status === 'in_progress'" x-text="t('inProgress')"></template>
               <template x-if="record.status === 'pending'" x-text="t('pending')"></template>
               <template x-if="record.status === 'pending_signature'" x-text="t('awaitingSign')"></template>
+              <template x-if="record.status === 'cancelled'" x-text="t('cancelled')"></template>
             </span>
           </div>
           <div class="record-meta">
@@ -276,6 +290,9 @@ const translations = {
     signConfirm: 'Confirm',
     signCancel: 'Cancel',
     nameRequired: 'Please enter your name',
+    allSites: 'All Sites',
+    allStatus: 'All Status',
+    cancelled: '🚫 Cancelled',
   },
   zh: {
     siteTitle: '出货确认记录',
@@ -327,6 +344,9 @@ const translations = {
     signConfirm: '确认',
     signCancel: '取消',
     nameRequired: '请输入你的姓名',
+    allSites: '全部站点',
+    allStatus: '全部状态',
+    cancelled: '🚫 已取消',
     btnResumeScanZh: '继续扫码',
   },
 };
@@ -343,6 +363,8 @@ function historyApp() {
     endDate: '',
     searchPickListId: '',
     searchCustomer: '',
+    filterSite: '',
+    filterStatus: '',
     showDetailModal: false,
     detail: null,
 
@@ -373,6 +395,8 @@ function historyApp() {
         if (this.endDate) params.set('endDate', this.endDate);
         if (this.searchPickListId.trim()) params.set('pickListId', this.searchPickListId.trim());
         if (this.searchCustomer.trim()) params.set('customer', this.searchCustomer.trim());
+        if (this.filterSite) params.set('site', this.filterSite);
+        if (this.filterStatus) params.set('status', this.filterStatus);
         const url = `/api/history?${params.toString()}`;
         const res = await fetch(url);
         const json = await res.json();
@@ -525,6 +549,12 @@ body {
   min-width: 120px;
 }
 .search-input:focus { border-color: #667eea; }
+.filter-select {
+  padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0;
+  border-radius: 8px; font-size: 0.9rem; outline: none;
+  background: white; cursor: pointer; min-width: 100px;
+}
+.filter-select:focus { border-color: #667eea; }
 .date-sep { color: #94a3b8; font-weight: 500; }
 .form-row button {
   padding: 0.6rem 1.2rem; border: none; border-radius: 8px;
@@ -640,6 +670,7 @@ body {
 
 /* ---- 记录操作按钮 ---- */
 .record-status.pending_signature { background: #fef3c7; color: #a16207; }
+.record-status.cancelled { background: #fee2e2; color: #991b1b; }
 .record-actions {
   display: flex; gap: 0.5rem; margin-top: 0.5rem;
 }
@@ -709,6 +740,7 @@ body {
   .section { margin: 0.5rem auto; padding: 0 0.5rem; }
   .form-row { flex-direction: column; }
   .search-input { min-width: auto; font-size: 0.9rem; }
+  .filter-select { min-width: auto; font-size: 0.85rem; padding: 0.5rem 0.6rem; }
   .detail-grid { grid-template-columns: 1fr; }
   .detail-table { font-size: 0.7rem; }
   .detail-table th, .detail-table td { padding: 0.3rem 0.4rem; }
