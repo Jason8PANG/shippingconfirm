@@ -394,7 +394,8 @@ function historyApp() {
       weekAgo.setDate(weekAgo.getDate() - 7);
       this.startDate = weekAgo.toISOString().split('T')[0];
       this.endDate = today.toISOString().split('T')[0];
-      this.loadHistory();
+      // 延迟初始加载，避免 Alpine 初始化时竞态导致 _x_dataStack 错误
+      this.$nextTick(() => this.loadHistory());
     },
 
     async loadHistory() {
