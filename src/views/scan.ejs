@@ -49,32 +49,6 @@
         <div><strong x-text="t('totalCartons')"></strong> <span x-text="notice?.total_cartons"></span> <span x-text="t('cartons')"></span></div>
       </div>
 
-      <!-- 品项预览列表 -->
-      <div class="items-preview" x-show="items.length > 0">
-        <h4><span x-text="t('itemsTitle')"></span> (<span x-text="items.length"></span> <span x-text="t('items')"></span>)</h4>
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th x-text="t('colSeq')"></th>
-              <th x-text="t('colWO')"></th>
-              <th x-text="t('colPartNo')"></th>
-              <th x-text="t('colQty')"></th>
-              <th x-text="t('colCartons')"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <template x-for="(item, idx) in items" :key="idx">
-              <tr>
-                <td x-text="item.sequence"></td>
-                <td class="code-cell" x-text="item.ref_num"></td>
-                <td class="code-cell" x-text="item.item_code"></td>
-                <td><span x-text="item.qty_to_pick"></span> <span x-text="item.um"></span></td>
-                <td class="highlight"><span x-text="item.planned_boxes"></span> <span x-text="t('cartons')"></span></td>
-              </tr>
-            </template>
-          </tbody>
-        </table>
-      </div>
     </div>
 
     <!-- 进行中提示 -->
@@ -202,6 +176,10 @@
                 <span class="v-field-val" x-text="item.sequence"></span>
               </div>
               <div class="v-field-row">
+                <span class="v-field-label">SO</span>
+                <span class="v-field-val v-field-code" x-text="item.ref_num || '-'"></span>
+              </div>
+              <div class="v-field-row">
                 <span class="v-field-label">WO</span>
                 <span class="v-field-val v-field-code" x-text="item.wo_number || '-'"></span>
               </div>
@@ -236,15 +214,17 @@
       </div>
       <!-- 汇总卡片 -->
       <div class="v-card v-card-summary" x-show="summary">
-        <div class="v-field-list">
-          <div class="v-field-row v-field-row-bold">
-            <span class="v-field-label" x-text="t('totalShipQty')"></span>
-            <span class="v-field-val v-field-num" x-text="summary?.totalShipQty || 0"></span>
+        <div class="v-summary-grid">
+          <div class="v-summary-col v-summary-ship">
+            <div class="v-summary-label" x-text="t('totalShipQty')"></div>
+            <div class="v-summary-val" x-text="summary?.totalShipQty || 0"></div>
           </div>
-          <div class="v-field-row v-field-row-bold">
-            <span class="v-field-label" x-text="t('totalVerifiedQty')"></span>
-            <span class="v-field-val v-field-num text-green" x-text="summary?.totalScannedQty || 0"></span>
+          <div class="v-summary-col v-summary-verified">
+            <div class="v-summary-label" x-text="t('totalVerifiedQty')"></div>
+            <div class="v-summary-val" :class="{ 'v-num-match': summary?.totalScannedQty === summary?.totalShipQty }" x-text="summary?.totalScannedQty || 0"></div>
           </div>
+        </div>
+        <div class="v-summary-bottom">
           <div class="v-field-row v-field-row-bold">
             <span class="v-field-label" x-text="t('totalUnverifiedQty')"></span>
             <span class="v-field-val v-field-num" :class="(summary?.totalUnverifiedQty || 0) > 0 ? 'text-red' : 'text-green'" x-text="summary?.totalUnverifiedQty || 0"></span>
@@ -954,7 +934,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: #f0f2f5;
   color: #1a1a2e;
-  font-size: 16px;
+  font-size: 24px;
   line-height: 1.6;
   -webkit-text-size-adjust: 100%;
 }
@@ -965,7 +945,7 @@ body {
 .header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 1rem;
+  padding: 1.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -975,11 +955,11 @@ body {
   z-index: 100;
 }
 
-.header h1 { font-size: 1.2rem; font-weight: 600; }
+.header h1 { font-size: 1.8rem; font-weight: 600; }
 
 .header nav {
   display: flex;
-  gap: 0.3rem;
+  gap: 0.45rem;
   align-items: center;
 }
 
@@ -987,10 +967,10 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
-  padding: 0 0.8rem;
+  height: 51px;
+  padding: 0 1.2rem;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 1.35rem;
   font-weight: 500;
   transition: all 0.2s;
   text-decoration: none;
@@ -1015,34 +995,34 @@ body {
 /* ---- 区块 ---- */
 .section {
   max-width: 900px;
-  margin: 1rem auto;
-  padding: 0 1rem;
+  margin: 1.5rem auto;
+  padding: 0 1.5rem;
 }
 
 .section h2 {
-  font-size: 1.1rem;
-  margin-bottom: 0.8rem;
+  font-size: 1.65rem;
+  margin-bottom: 1.2rem;
   color: #16213e;
 }
 
 .section h4 {
-  font-size: 0.95rem;
-  margin: 1rem 0 0.5rem;
+  font-size: 1.425rem;
+  margin: 1.5rem 0 0.75rem;
   color: #16213e;
 }
 
 /* ---- 表单 ---- */
 .form-row {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .form-row input {
   flex: 1;
-  padding: 0.8rem 1rem;
+  padding: 1.2rem 1.5rem;
   border: 2px solid #e2e8f0;
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: 1.5rem;
   outline: none;
   transition: border-color 0.2s;
 }
@@ -1054,10 +1034,10 @@ body {
 .form-row button,
 .action-row button,
 button {
-  padding: 0.8rem 1.5rem;
+  padding: 1.2rem 2.25rem;
   border: none;
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: 1.5rem;
   cursor: pointer;
   transition: all 0.2s;
   background: #e2e8f0;
@@ -1074,8 +1054,8 @@ button:disabled {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
   color: white !important;
   font-weight: 600 !important;
-  padding: 1rem 2rem !important;
-  font-size: 1.1rem !important;
+  padding: 1.5rem 3rem !important;
+  font-size: 1.65rem !important;
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -1084,25 +1064,25 @@ button:disabled {
 }
 
 .hint {
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   color: #94a3b8;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .error-box {
   background: #fee2e2;
   color: #dc2626;
-  padding: 0.8rem 1rem;
+  padding: 1.2rem 1.5rem;
   border-radius: 8px;
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
+  margin-top: 0.75rem;
+  font-size: 1.35rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .error-box .error-icon {
-  font-size: 1.2rem;
+  font-size: 1.8rem;
   flex-shrink: 0;
 }
 
@@ -1110,7 +1090,7 @@ button:disabled {
 .notice-card {
   background: white;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
@@ -1118,18 +1098,18 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.8rem;
+  margin-bottom: 1.2rem;
 }
 
 .notice-header h3 {
-  font-size: 1.2rem;
+  font-size: 1.8rem;
   color: #16213e;
 }
 
 .badge {
-  padding: 0.2rem 0.6rem;
+  padding: 0.3rem 0.9rem;
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   font-weight: 600;
 }
 
@@ -1139,58 +1119,19 @@ button:disabled {
 
 .notice-meta {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 0.5rem;
-  font-size: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(225px, 1fr));
+  gap: 0.75rem;
+  font-size: 1.275rem;
   color: #475569;
-}
-
-/* ---- 品项表格 ---- */
-.items-preview {
-  margin-top: 0.8rem;
-  border-top: 1px solid #f1f5f9;
-  padding-top: 0.8rem;
-}
-
-.items-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
-  margin-top: 0.5rem;
-}
-
-.items-table th {
-  background: #f1f5f9;
-  padding: 0.5rem;
-  text-align: left;
-  font-weight: 600;
-  color: #475569;
-  font-size: 0.75rem;
-}
-
-.items-table td {
-  padding: 0.5rem;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.items-table .code-cell {
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  color: #1d4ed8;
-}
-
-.items-table .highlight {
-  font-weight: 700;
-  color: #7c3aed;
 }
 
 /* ---- 状态头部 ---- */
 .status-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 1rem;
+  padding: 1.5rem;
   border-radius: 12px;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .status-completed {
@@ -1198,64 +1139,63 @@ button:disabled {
 }
 
 .status-title {
-  font-size: 1.2rem;
+  font-size: 1.8rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
 }
 
 /* ---- 汇总统计行 ---- */
 .summary-row {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   flex-wrap: wrap;
-  font-size: 0.85rem;
+  font-size: 1.275rem;
 }
 
 .summary-item {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.6rem;
 }
 
 .summary-label {
   opacity: 0.8;
-  font-size: 0.8rem;
+  font-size: 1.2rem;
 }
 
 .summary-value {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 1.5rem;
 }
 
-.text-green { color: #34d399; }
-.text-yellow { color: #fbbf24; }
-.text-red { color: #f87171; }
+.text-green { color: #059669; }
+.text-yellow { color: #b45309; }
+.text-red { color: #dc2626; }
 
 /* ---- 扫码输入区 ---- */
 .scan-input-area {
   background: white;
   border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   border: 2px solid #667eea;
 }
 
 .scan-row {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 .scan-field {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.3rem;
 }
 
 .scan-field label {
-  font-size: 0.75rem;
+  font-size: 1.125rem;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
@@ -1264,10 +1204,10 @@ button:disabled {
 
 .scan-input {
   width: 100%;
-  padding: 0.8rem;
+  padding: 1.2rem;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 1.1rem;
+  font-size: 1.65rem;
   outline: none;
   font-family: 'Courier New', monospace;
 }
@@ -1278,10 +1218,11 @@ button:disabled {
 
 /* ---- 扫码反馈 ---- */
 .scan-feedback {
-  padding: 0.8rem 1rem;
+  padding: 1.2rem 1.5rem;
   border-radius: 8px;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   font-weight: 500;
+  font-size: 1.35rem;
   animation: slideIn 0.2s ease;
 }
 
@@ -1301,9 +1242,9 @@ button:disabled {
 }
 
 .scan-detail {
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   color: #64748b;
-  margin-top: 0.3rem;
+  margin-top: 0.45rem;
 }
 
 .over-qty-warn {
@@ -1315,21 +1256,21 @@ button:disabled {
 .compare-cards-wrap {
   background: white;
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .compare-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.7rem;
-  margin-top: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.05rem;
+  margin-top: 0.75rem;
 }
 
 .v-card {
   background: #f8fafc;
   border-radius: 10px;
-  padding: 0.75rem;
+  padding: 1.125rem;
   border: 1.5px solid #e2e8f0;
   transition: all 0.2s;
 }
@@ -1345,21 +1286,21 @@ button:disabled {
 }
 
 .v-card-summary {
-  margin-top: 0.6rem;
+  margin-top: 0.9rem;
   background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
   border-color: #cbd5e1;
 }
 
 /* 状态角标 */
 .v-card-status-badge {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .v-badge {
   display: inline-block;
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   font-weight: 600;
-  padding: 0.15rem 0.5rem;
+  padding: 0.225rem 0.75rem;
   border-radius: 20px;
 }
 
@@ -1389,9 +1330,9 @@ button:disabled {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 0.22rem 0;
+  padding: 0.33rem 0;
   border-bottom: 1px solid #f1f5f9;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .v-field-row:last-child {
@@ -1404,7 +1345,7 @@ button:disabled {
 }
 
 .v-field-label {
-  font-size: 0.78rem;
+  font-size: 1.17rem;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1413,7 +1354,7 @@ button:disabled {
 }
 
 .v-field-val {
-  font-size: 0.93rem;
+  font-size: 1.395rem;
   color: #1e293b;
   font-weight: 600;
   text-align: right;
@@ -1422,45 +1363,83 @@ button:disabled {
 
 .v-field-code {
   font-family: 'Courier New', monospace;
-  font-size: 0.88rem;
-  color: #1d4ed8;
-}
-
-.v-field-part {
-  color: #7c3aed;
+  font-size: 1.32rem;
+  color: #1e293b;
 }
 
 .v-field-desc {
-  font-size: 0.82rem;
+  font-size: 1.23rem;
   color: #64748b;
   font-weight: 500;
   text-align: right;
-  max-width: 150px;
+  max-width: 225px;
   word-break: break-word;
   line-height: 1.3;
 }
 
 .v-field-num {
   font-family: 'Courier New', monospace;
-  font-size: 1.08rem;
+  font-size: 1.62rem;
   font-weight: 700;
+  color: #1e293b;
 }
 
 .v-field-divider {
   height: 1px;
   background: #e2e8f0;
-  margin: 0.3rem 0;
+  margin: 0.45rem 0;
+}
+
+/* ---- 汇总卡片 2列布局 ---- */
+.v-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.v-summary-col {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+  border: 1.5px solid #e2e8f0;
+}
+
+.v-summary-label {
+  font-size: 1.05rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+}
+
+.v-summary-val {
+  font-family: 'Courier New', monospace;
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.v-summary-val.v-num-match {
+  color: #059669;
+}
+
+.v-summary-bottom {
+  border-top: 1px solid #cbd5e1;
+  padding-top: 0.6rem;
 }
 
 /* ---- 数量不匹配警告 ---- */
 .mismatch-warning {
   background: #fef3c7;
   color: #92400e;
-  padding: 0.8rem 1rem;
+  padding: 1.2rem 1.5rem;
   border-radius: 8px;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1.35rem;
   border: 1px solid #fcd34d;
 }
 
@@ -1468,17 +1447,17 @@ button:disabled {
 .back-row {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.8rem;
+  gap: 0.9rem;
+  margin-bottom: 1.2rem;
 }
 
 .btn-back {
-  padding: 0.5rem 1rem;
+  padding: 0.75rem 1.5rem;
   background: #f1f5f9;
   color: #475569;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 1.35rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -1490,7 +1469,7 @@ button:disabled {
 }
 
 .back-hint {
-  font-size: 0.78rem;
+  font-size: 1.17rem;
   color: #94a3b8;
 }
 
@@ -1510,16 +1489,16 @@ button:disabled {
 .resume-banner {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 1.2rem;
   background: #fffbeb;
   border: 1px solid #fcd34d;
   border-radius: 10px;
-  padding: 0.8rem 1rem;
-  margin-bottom: 0.8rem;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .resume-icon {
-  font-size: 1.5rem;
+  font-size: 2.25rem;
   flex-shrink: 0;
 }
 
@@ -1528,17 +1507,17 @@ button:disabled {
 }
 
 .resume-title {
-  font-size: 0.9rem;
+  font-size: 1.35rem;
   font-weight: 600;
   color: #92400e;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.6rem;
 }
 
 .resume-progress {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.8rem;
+  gap: 0.75rem;
+  font-size: 1.2rem;
   color: #78350f;
 }
 
@@ -1546,18 +1525,18 @@ button:disabled {
 .completed-message {
   background: white;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 2.25rem;
   text-align: center;
-  font-size: 1.2rem;
+  font-size: 1.8rem;
   color: #059669;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .sign-info {
-  font-size: 0.9rem;
+  font-size: 1.35rem;
   color: #475569;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 /* ---- 签名提示 ---- */
@@ -1569,11 +1548,11 @@ button:disabled {
 .sign-prompt-message {
   background: #fef3c7;
   color: #92400e;
-  padding: 1rem;
+  padding: 1.5rem;
   border-radius: 10px;
-  font-size: 1rem;
+  font-size: 1.5rem;
   font-weight: 500;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 /* ---- 签名 Modal ---- */
@@ -1585,21 +1564,21 @@ button:disabled {
   align-items: center;
   justify-content: center;
   z-index: 200;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 
 .sign-modal {
   background: white;
   border-radius: 16px;
-  padding: 1.5rem;
+  padding: 2.25rem;
   width: 100%;
-  max-width: 560px;
+  max-width: 700px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 
 .sign-modal h3 {
-  font-size: 1.2rem;
-  margin-bottom: 1rem;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
   color: #16213e;
   text-align: center;
 }
@@ -1607,23 +1586,23 @@ button:disabled {
 .sign-name-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
 }
 
 .sign-name-row label {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1.35rem;
   white-space: nowrap;
   color: #475569;
 }
 
 .sign-name-row input {
   flex: 1;
-  padding: 0.6rem 0.8rem;
+  padding: 0.9rem 1.2rem;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 1.425rem;
   outline: none;
 }
 
@@ -1635,76 +1614,70 @@ button:disabled {
   border: 2px solid #e2e8f0;
   border-radius: 10px;
   overflow: hidden;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
   background: white;
 }
 
 .sign-canvas-wrap canvas {
   width: 100%;
-  height: 200px;
+  height: 300px;
   display: block;
   touch-action: none;
 }
 
 .sign-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.75rem;
   justify-content: flex-end;
 }
 
 .sign-actions button {
-  padding: 0.7rem 1.2rem;
-  font-size: 0.95rem;
+  padding: 1.05rem 1.8rem;
+  font-size: 1.425rem;
 }
 
 .sign-error {
   color: #dc2626;
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
+  font-size: 1.275rem;
+  margin-top: 0.75rem;
   text-align: center;
 }
 
 /* ---- 响应式 ---- */
 @media (max-width: 480px) {
-  body { font-size: 14px; }
-  .header { padding: 0.6rem 0.8rem; flex-wrap: wrap; gap: 0.4rem; }
-  .header h1 { font-size: 1rem; }
-  .header nav { gap: 0.15rem; width: 100%; justify-content: flex-end; }
-  .nav-btn { height: 30px; padding: 0 0.5rem; font-size: 0.78rem; }
-  .section { margin: 0.5rem auto; padding: 0 0.5rem; }
-  .notice-card { padding: 0.6rem; border-radius: 10px; }
-  .notice-header h3 { font-size: 1rem; }
-  .notice-meta { grid-template-columns: 1fr 1fr; gap: 0.3rem; font-size: 0.8rem; }
-  .items-preview h4 { font-size: 0.85rem; }
-  .items-table { font-size: 0.7rem; }
-  .items-table th, .items-table td { padding: 0.3rem 0.4rem; }
-  .items-table .code-cell { font-size: 0.7rem; word-break: break-all; }
-  .status-header { padding: 0.7rem; border-radius: 10px; }
-  .status-title { font-size: 0.95rem; }
-  .summary-row { font-size: 0.75rem; gap: 0.6rem; }
-  .summary-value { font-size: 0.85rem; }
-  .scan-row { flex-direction: column; gap: 0.4rem; }
-  .scan-input { font-size: 0.95rem; padding: 0.6rem; }
-  .compare-table { font-size: 0.7rem; }
-  .compare-table th { font-size: 0.65rem; padding: 0.35rem 0.3rem; }
-  .compare-table td { padding: 0.35rem 0.3rem; }
-  .compare-table .code-cell { font-size: 0.65rem; }
-  .btn-primary { padding: 0.7rem 1rem !important; font-size: 0.9rem !important; }
-  .scan-feedback { font-size: 0.85rem; padding: 0.6rem 0.8rem; }
-  .scan-detail { font-size: 0.75rem; }
-  .form-row input { font-size: 0.9rem; padding: 0.6rem 0.8rem; }
-  .form-row button { font-size: 0.9rem; padding: 0.6rem 1rem; }
-  .sign-modal { padding: 1rem; border-radius: 12px; }
+  body { font-size: 18px; }
+  .header { padding: 0.9rem 1.2rem; flex-wrap: wrap; gap: 0.6rem; }
+  .header h1 { font-size: 1.5rem; }
+  .header nav { gap: 0.22rem; width: 100%; justify-content: flex-end; }
+  .nav-btn { height: 42px; padding: 0 0.75rem; font-size: 1.1rem; }
+  .section { margin: 0.75rem auto; padding: 0 0.75rem; }
+  .notice-card { padding: 0.9rem; border-radius: 10px; }
+  .notice-header h3 { font-size: 1.5rem; }
+  .notice-meta { grid-template-columns: 1fr 1fr; gap: 0.45rem; font-size: 1.15rem; }
+  .status-header { padding: 1.05rem; border-radius: 10px; }
+  .status-title { font-size: 1.425rem; }
+  .summary-row { font-size: 1.125rem; gap: 0.9rem; }
+  .summary-value { font-size: 1.275rem; }
+  .scan-row { flex-direction: column; gap: 0.6rem; }
+  .scan-input { font-size: 1.425rem; padding: 0.9rem; }
+  .compare-cards { grid-template-columns: 1fr; }
+  .v-summary-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .v-summary-col { padding: 0.7rem; }
+  .v-summary-val { font-size: 1.5rem; }
+  .btn-primary { padding: 1.05rem 1.5rem !important; font-size: 1.35rem !important; }
+  .scan-feedback { padding: 0.9rem 1.2rem; }
+  .form-row input { font-size: 1.35rem; padding: 0.9rem 1.2rem; }
+  .form-row button { font-size: 1.35rem; padding: 0.9rem 1.5rem; }
+  .sign-modal { padding: 1.5rem; border-radius: 12px; }
   .sign-name-row { flex-direction: column; align-items: stretch; }
-  .sign-name-row label { margin-bottom: 0.2rem; }
+  .sign-name-row label { margin-bottom: 0.3rem; }
+  .sign-canvas-wrap canvas { height: 250px; }
 }
 
 @media (max-width: 360px) {
-  body { font-size: 13px; }
+  body { font-size: 16px; }
   .notice-meta { grid-template-columns: 1fr; }
-  .items-table th, .items-table td { padding: 0.25rem 0.3rem; }
-  .header h1 { font-size: 0.9rem; }
-  .compare-table { font-size: 0.65rem; }
-  .compare-table th, .compare-table td { padding: 0.25rem 0.2rem; }
+  .header h1 { font-size: 1.35rem; }
+  .v-summary-grid { grid-template-columns: 1fr; }
 }
 </style>

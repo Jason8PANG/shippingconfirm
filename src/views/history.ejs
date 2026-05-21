@@ -15,33 +15,33 @@
   <!-- 查询条件 -->
   <section class="section">
     <div class="form-row">
-      <input type="date" x-model="startDate" @change="loadHistory()">
+      <input type="date" x-model="startDate" @change="loadHistory()" class="date-input">
       <span class="date-sep" x-text="t('to')"></span>
-      <input type="date" x-model="endDate" @change="loadHistory()">
+      <input type="date" x-model="endDate" @change="loadHistory()" class="date-input">
     </div>
-    <div class="form-row" style="margin-top: 0.5rem;">
+    <div class="form-stack">
       <input type="text" x-model="searchPickListId" 
              :placeholder="t('searchPickListId')" 
              @keyup.enter="loadHistory()" 
-             class="search-input">
+             class="stack-input">
       <input type="text" x-model="searchCustomer" 
              :placeholder="t('searchCustomer')" 
              @keyup.enter="loadHistory()" 
-             class="search-input">
-      <select x-model="filterSite" @change="loadHistory()" class="filter-select">
+             class="stack-input">
+      <select x-model="filterSite" @change="loadHistory()" class="stack-input">
         <option value="" x-text="t('allSites')"></option>
         <option value="310">310</option>
         <option value="330">330</option>
         <option value="410">410</option>
       </select>
-      <select x-model="filterStatus" @change="loadHistory()" class="filter-select">
+      <select x-model="filterStatus" @change="loadHistory()" class="stack-input">
         <option value="" x-text="t('allStatus')"></option>
         <option value="in_progress" x-text="t('inProgress')"></option>
         <option value="pending_signature" x-text="t('awaitingSign')"></option>
         <option value="confirmed" x-text="t('done')"></option>
         <option value="cancelled" x-text="t('cancelled')"></option>
       </select>
-      <button @click="loadHistory()" :disabled="loading">
+      <button @click="loadHistory()" :disabled="loading" class="stack-btn">
         <span x-show="!loading" x-text="t('searchBtn')"></span>
         <span x-show="loading" x-text="t('searching')"></span>
       </button>
@@ -552,6 +552,52 @@ body {
   padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0;
   border-radius: 8px; font-size: 0.9rem; outline: none;
 }
+.date-input {
+  flex: 1;
+  padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0;
+  border-radius: 8px; font-size: 0.9rem; outline: none;
+}
+.date-input:focus { border-color: #667eea; }
+.date-sep { color: #94a3b8; font-weight: 500; }
+.form-row button {
+  padding: 0.6rem 1.2rem; border: none; border-radius: 8px;
+  background: #667eea; color: white; font-weight: 600; cursor: pointer;
+}
+
+/* ---- 垂直堆叠表单 ---- */
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.stack-input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  background: white;
+}
+.stack-input:focus { border-color: #667eea; }
+select.stack-input {
+  cursor: pointer;
+  appearance: auto;
+}
+.stack-btn {
+  padding: 0.7rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background: #667eea;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.stack-btn:hover { background: #5a6fd6; }
+.stack-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .search-input {
   flex: 1;
   padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0;
@@ -565,11 +611,6 @@ body {
   background: white; cursor: pointer; min-width: 100px;
 }
 .filter-select:focus { border-color: #667eea; }
-.date-sep { color: #94a3b8; font-weight: 500; }
-.form-row button {
-  padding: 0.6rem 1.2rem; border: none; border-radius: 8px;
-  background: #667eea; color: white; font-weight: 600; cursor: pointer;
-}
 
 /* ---- 加载/空状态 ---- */
 .loading, .empty { text-align: center; padding: 3rem; color: #94a3b8; }
@@ -757,9 +798,10 @@ body {
   .header nav { gap: 0.15rem; width: 100%; justify-content: flex-end; }
   .nav-btn { height: 30px; padding: 0 0.5rem; font-size: 0.78rem; }
   .section { margin: 0.5rem auto; padding: 0 0.5rem; }
-  .form-row { flex-direction: column; }
-  .search-input { min-width: auto; font-size: 0.9rem; }
-  .filter-select { min-width: auto; font-size: 0.85rem; padding: 0.5rem 0.6rem; }
+  .form-row { flex-direction: row; }
+  .date-input { font-size: 0.9rem; padding: 0.5rem 0.6rem; }
+  .stack-input { font-size: 1rem; padding: 0.7rem 0.8rem; }
+  .stack-btn { font-size: 1rem; }
   .detail-grid { grid-template-columns: 1fr; }
   .detail-table { font-size: 0.7rem; }
   .detail-table th, .detail-table td { padding: 0.3rem 0.4rem; }
