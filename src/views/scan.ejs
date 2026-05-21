@@ -21,6 +21,7 @@
              @keyup.enter="doQRScan()"
              :placeholder="t('qrPlaceholder')"
              class="qr-input"
+             inputmode="none"
              autocomplete="off"
              autocorrect="off"
              autocapitalize="off"
@@ -1178,6 +1179,9 @@ button:disabled {
   font-family: 'Courier New', monospace;
   box-shadow: 0 2px 8px rgba(102,126,234,0.15);
   background: #fff;
+  caret-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .scan-control-bar .qr-input:focus {
   border-color: #764ba2;
