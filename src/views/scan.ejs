@@ -214,17 +214,15 @@
       </div>
       <!-- 汇总卡片 -->
       <div class="v-card v-card-summary" x-show="summary">
-        <div class="v-summary-grid">
-          <div class="v-summary-col v-summary-ship">
-            <div class="v-summary-label" x-text="t('totalShipQty')"></div>
-            <div class="v-summary-val" x-text="summary?.totalShipQty || 0"></div>
+        <div class="v-field-list">
+          <div class="v-field-row v-field-row-bold">
+            <span class="v-field-label" x-text="t('totalShipQty')"></span>
+            <span class="v-field-val v-field-num" x-text="summary?.totalShipQty || 0"></span>
           </div>
-          <div class="v-summary-col v-summary-verified">
-            <div class="v-summary-label" x-text="t('totalVerifiedQty')"></div>
-            <div class="v-summary-val" :class="{ 'v-num-match': summary?.totalScannedQty === summary?.totalShipQty }" x-text="summary?.totalScannedQty || 0"></div>
+          <div class="v-field-row v-field-row-bold">
+            <span class="v-field-label" x-text="t('totalVerifiedQty')"></span>
+            <span class="v-field-val v-field-num" :class="{ 'text-green': summary?.totalScannedQty === summary?.totalShipQty }" x-text="summary?.totalScannedQty || 0"></span>
           </div>
-        </div>
-        <div class="v-summary-bottom">
           <div class="v-field-row v-field-row-bold">
             <span class="v-field-label" x-text="t('totalUnverifiedQty')"></span>
             <span class="v-field-val v-field-num" :class="(summary?.totalUnverifiedQty || 0) > 0 ? 'text-red' : 'text-green'" x-text="summary?.totalUnverifiedQty || 0"></span>
@@ -1390,46 +1388,6 @@ button:disabled {
   margin: 0.45rem 0;
 }
 
-/* ---- 汇总卡片 2列布局 ---- */
-.v-summary-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.v-summary-col {
-  background: white;
-  border-radius: 10px;
-  padding: 1rem;
-  text-align: center;
-  border: 1.5px solid #e2e8f0;
-}
-
-.v-summary-label {
-  font-size: 1.05rem;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 500;
-  margin-bottom: 0.4rem;
-}
-
-.v-summary-val {
-  font-family: 'Courier New', monospace;
-  font-size: 2.1rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.v-summary-val.v-num-match {
-  color: #059669;
-}
-
-.v-summary-bottom {
-  border-top: 1px solid #cbd5e1;
-  padding-top: 0.6rem;
-}
 
 /* ---- 数量不匹配警告 ---- */
 .mismatch-warning {
@@ -1661,9 +1619,6 @@ button:disabled {
   .scan-row { flex-direction: column; gap: 0.6rem; }
   .scan-input { font-size: 1.425rem; padding: 0.9rem; }
   .compare-cards { grid-template-columns: 1fr; }
-  .v-summary-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
-  .v-summary-col { padding: 0.7rem; }
-  .v-summary-val { font-size: 1.5rem; }
   .btn-primary { padding: 1.05rem 1.5rem !important; font-size: 1.35rem !important; }
   .scan-feedback { padding: 0.9rem 1.2rem; }
   .form-row input { font-size: 1.35rem; padding: 0.9rem 1.2rem; }
@@ -1678,6 +1633,5 @@ button:disabled {
   body { font-size: 16px; }
   .notice-meta { grid-template-columns: 1fr; }
   .header h1 { font-size: 1.35rem; }
-  .v-summary-grid { grid-template-columns: 1fr; }
 }
 </style>
