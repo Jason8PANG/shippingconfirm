@@ -136,62 +136,70 @@
 
         <div class="detail-section">
           <h4 x-text="t('itemsTitle')"></h4>
-          <table class="detail-table" x-show="detail?.items?.length > 0">
-            <thead>
-              <tr>
-                <th x-text="t('colSeq')"></th>
-                <th x-text="t('colPartNo')"></th>
-                <th x-text="t('plannedCartons')"></th>
-                <th x-text="t('scannedCartons')"></th>
-                <th x-text="t('status')"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <template x-for="(item, idx) in detail?.items" :key="idx">
-                <tr>
-                  <td x-text="item.sequence"></td>
-                  <td class="code-cell" x-text="item.item_code"></td>
-                  <td><span x-text="item.planned_boxes"></span> <span x-text="t('cartons')"></span></td>
-                  <td><span x-text="item.scanned_boxes"></span> <span x-text="t('cartons')"></span></td>
-                  <td>
+          <div class="item-cards" x-show="detail?.items?.length > 0">
+            <template x-for="(item, idx) in detail?.items" :key="idx">
+              <div class="item-card">
+                <div class="card-field">
+                  <span class="card-label" x-text="t('colSeq')"></span>
+                  <span class="card-val" x-text="item.sequence"></span>
+                </div>
+                <div class="card-field">
+                  <span class="card-label" x-text="t('colPartNo')"></span>
+                  <span class="card-val code-cell" x-text="item.item_code"></span>
+                </div>
+                <div class="card-field">
+                  <span class="card-label" x-text="t('plannedCartons')"></span>
+                  <span class="card-val"><span x-text="item.planned_boxes"></span> <span x-text="t('cartons')"></span></span>
+                </div>
+                <div class="card-field">
+                  <span class="card-label" x-text="t('scannedCartons')"></span>
+                  <span class="card-val"><span x-text="item.scanned_boxes"></span> <span x-text="t('cartons')"></span></span>
+                </div>
+                <div class="card-field">
+                  <span class="card-label" x-text="t('status')"></span>
+                  <span class="card-val">
                     <span class="item-badge" :class="item.status === 'completed' ? 'badge-done' : 'badge-active'" x-text="item.status"></span>
-                  </td>
-                </tr>
-              </template>
-            </tbody>
-          </table>
+                  </span>
+                </div>
+              </div>
+            </template>
+          </div>
         </div>
 
         <div class="detail-section">
           <h4 x-text="t('scanLogs')"></h4>
-          <div class="log-list" x-show="detail?.logs?.length > 0">
-            <table class="log-table">
-              <thead>
-                <tr>
-                  <th x-text="t('time')"></th>
-                  <th x-text="t('colPartNo')"></th>
-                  <th x-text="t('wo')"></th>
-                  <th x-text="t('boxNo')"></th>
-                  <th x-text="t('result')"></th>
-                  <th x-text="t('errorMsg')"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <template x-for="(log, idx) in detail?.logs?.slice(0, 50)" :key="idx">
-                  <tr :class="log.scan_result === 'failed' ? 'log-fail' : 'log-ok'">
-                    <td x-text="log.scanned_at"></td>
-                    <td class="code-cell" x-text="log.cust_pn || '-'"></td>
-                    <td class="code-cell" x-text="log.wo_number || '-'"></td>
-                    <td>
-                      <span x-show="log.box_num" x-text="log.box_num + '/' + log.total_boxes"></span>
-                      <span x-show="!log.box_num" x-text="t('singleCarton')"></span>
-                    </td>
-                    <td><span class="log-status" x-text="log.scan_result === 'success' ? '✅' : '❌'"></span></td>
-                    <td x-text="log.error_message || ''" class="log-error-cell"></td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
+          <div class="log-cards" x-show="detail?.logs?.length > 0">
+            <template x-for="(log, idx) in detail?.logs?.slice(0, 50)" :key="idx">
+              <div class="log-card" :class="log.scan_result === 'failed' ? 'log-card-fail' : 'log-card-ok'">
+                <div class="card-field">
+                  <span class="card-label" x-text="t('time')"></span>
+                  <span class="card-val log-time-val" x-text="log.scanned_at"></span>
+                </div>
+                <div class="card-field">
+                  <span class="card-label" x-text="t('colPartNo')"></span>
+                  <span class="card-val code-cell" x-text="log.cust_pn || '-'"></span>
+                </div>
+                <div class="card-field">
+                  <span class="card-label" x-text="t('wo')"></span>
+                  <span class="card-val code-cell" x-text="log.wo_number || '-'"></span>
+                </div>
+                <div class="card-field">
+                  <span class="card-label" x-text="t('boxNo')"></span>
+                  <span class="card-val">
+                    <span x-show="log.box_num" x-text="log.box_num + '/' + log.total_boxes"></span>
+                    <span x-show="!log.box_num" x-text="t('singleCarton')"></span>
+                  </span>
+                </div>
+                <div class="card-field">
+                  <span class="card-label" x-text="t('result')"></span>
+                  <span class="card-val"><span x-text="log.scan_result === 'success' ? '✅' : '❌'"></span></span>
+                </div>
+                <div class="card-field" x-show="log.error_message">
+                  <span class="card-label" x-text="t('errorMsg')"></span>
+                  <span class="card-val card-error" x-text="log.error_message"></span>
+                </div>
+              </div>
+            </template>
           </div>
           <div class="empty" x-show="!detail?.logs?.length" x-text="t('noScanLogs')"></div>
         </div>
@@ -240,7 +248,7 @@
 <script>
 const translations = {
   en: {
-    siteTitle: 'Shipping Confirmation Records',
+    siteTitle: 'Confirm Records',
     navScan: 'Scan',
     navHistory: 'History',
     to: 'to',
@@ -697,6 +705,30 @@ select.stack-input {
   font-weight: 600; color: #475569;
 }
 .detail-table td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; }
+
+/* ---- Item / Log 纵向卡片 ---- */
+.item-cards, .log-cards { display: flex; flex-direction: column; gap: 0.75rem; }
+.item-card, .log-card {
+  background: #f8fafc; border-radius: 10px; padding: 1.05rem;
+  border: 1px solid #e2e8f0;
+}
+.card-field {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.3rem 0; gap: 0.75rem;
+}
+.card-label {
+  font-size: 1.05rem; color: #94a3b8; text-transform: uppercase;
+  font-weight: 500; flex-shrink: 0; min-width: 80px;
+}
+.card-val {
+  font-size: 1.275rem; color: #1e293b; font-weight: 600;
+  text-align: right; word-break: break-all;
+}
+.log-card-ok { border-left: 4px solid #22c55e; background: #f0fdf4; }
+.log-card-fail { border-left: 4px solid #ef4444; background: #fef2f2; }
+.log-time-val { color: #94a3b8; font-size: 1.125rem; }
+.card-error { color: #dc2626; font-weight: 500; }
+
 .code-cell {
   font-family: 'Courier New', monospace; font-weight: 600; color: #1d4ed8;
 }
@@ -797,10 +829,9 @@ select.stack-input {
   .stack-input { font-size: 1.5rem; padding: 1.05rem 1.2rem; }
   .stack-btn { font-size: 1.5rem; }
   .detail-grid { grid-template-columns: 1fr; }
-  .detail-table { font-size: 1.05rem; }
-  .detail-table th, .detail-table td { padding: 0.45rem 0.6rem; }
-  .log-table { font-size: 1.05rem; }
-  .log-table th, .log-table td { padding: 0.375rem 0.45rem; }
+  .item-card, .log-card { padding: 0.75rem; }
+  .card-label { font-size: 0.9rem; min-width: 60px; }
+  .card-val { font-size: 1.125rem; }
   .record-card { padding: 0.9rem; }
   .modal-content { max-height: 90vh; }
 }
