@@ -73,13 +73,7 @@
             <div class="record-field-row">
               <span class="record-field-label" x-text="t('status')"></span>
               <span class="record-field-val">
-                <span class="record-status" :class="record.status">
-                  <template x-if="record.status === 'confirmed'" x-text="t('done')"></template>
-                  <template x-if="record.status === 'in_progress'" x-text="t('inProgress')"></template>
-                  <template x-if="record.status === 'pending'" x-text="t('pending')"></template>
-                  <template x-if="record.status === 'pending_signature'" x-text="t('awaitingSign')"></template>
-                  <template x-if="record.status === 'cancelled'" x-text="t('cancelled')"></template>
-                </span>
+              <span class="record-status" :class="record.status" x-text="statusLabel(record.status)"></span>
               </span>
             </div>
           </div>
@@ -133,10 +127,7 @@
             <div><strong x-text="t('shipMethod')"></strong>: <span x-text="detail?.confirmation?.ship_code"></span></div>
             <div><strong x-text="t('totalCartons')"></strong>: <span x-text="detail?.confirmation?.total_cartons"></span> <span x-text="t('cartons')"></span></div>
             <div><strong x-text="t('status')"></strong>: 
-              <span class="record-status" :class="detail?.confirmation?.status">
-                <template x-if="detail?.confirmation?.status === 'confirmed'" x-text="t('done')"></template>
-                <template x-if="detail?.confirmation?.status === 'in_progress'" x-text="t('inProgress')"></template>
-              </span>
+              <span class="record-status" :class="detail?.confirmation?.status" x-text="statusLabel(detail?.confirmation?.status)"></span>
             </div>
             <div><strong x-text="t('operator')"></strong>: <span x-text="detail?.confirmation?.operator"></span></div>
             <div><strong x-text="t('completedTime')"></strong>: <span x-text="detail?.confirmation?.completed_at"></span></div>
@@ -192,10 +183,8 @@
                     <td class="code-cell" x-text="log.cust_pn || '-'"></td>
                     <td class="code-cell" x-text="log.wo_number || '-'"></td>
                     <td>
-                      <template x-if="log.box_num">
-                        <span x-text="log.box_num + '/' + log.total_boxes"></span>
-                      </template>
-                      <template x-if="!log.box_num" x-text="t('singleCarton')"></template>
+                      <span x-show="log.box_num" x-text="log.box_num + '/' + log.total_boxes"></span>
+                      <span x-show="!log.box_num" x-text="t('singleCarton')"></span>
                     </td>
                     <td><span class="log-status" x-text="log.scan_result === 'success' ? '✅' : '❌'"></span></td>
                     <td x-text="log.error_message || ''" class="log-error-cell"></td>
@@ -366,6 +355,10 @@ function historyApp() {
     lang: 'en',
     t(key) { return translations[this.lang]?.[key] || translations.en[key] || key; },
     toggleLang() { this.lang = this.lang === 'en' ? 'zh' : 'en'; localStorage.setItem('shippingLang', this.lang); },
+    statusLabel(status) {
+      const map = { confirmed: 'done', in_progress: 'inProgress', pending: 'pending', pending_signature: 'awaitingSign', cancelled: 'cancelled' };
+      return this.t(map[status] || status);
+    },
 
     loading: false,
     records: [],
