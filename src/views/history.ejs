@@ -498,7 +498,7 @@ function historyApp() {
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: #f0f2f5; color: #1a1a2e; font-size: 16px; line-height: 1.6;
+  background: #f0f2f5; color: #1a1a2e; font-size: 24px; line-height: 1.6;
   -webkit-text-size-adjust: 100%;
 }
 [x-cloak] { display: none !important; }
@@ -506,23 +506,23 @@ body {
 /* ---- 顶部导航 ---- */
 .header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white; padding: 1rem;
+  color: white; padding: 1.5rem;
   display: flex; justify-content: space-between; align-items: center;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   position: sticky; top: 0; z-index: 100;
 }
-.header h1 { font-size: 1.2rem; font-weight: 600; }
+.header h1 { font-size: 1.8rem; font-weight: 600; }
 .header nav {
-  display: flex; gap: 0.3rem; align-items: center;
+  display: flex; gap: 0.45rem; align-items: center;
 }
 .nav-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
-  padding: 0 0.8rem;
+  height: 51px;
+  padding: 0 1.2rem;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 1.35rem;
   font-weight: 500;
   transition: all 0.2s;
   text-decoration: none;
@@ -538,23 +538,23 @@ body {
   font-weight: 600; cursor: pointer;
 }
 /* ---- 区块 ---- */
-.section { max-width: 900px; margin: 1rem auto; padding: 0 1rem; }
+.section { max-width: 900px; margin: 1.5rem auto; padding: 0 1.5rem; }
 
 /* ---- 表单 ---- */
-.form-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.form-row { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
 .form-row input[type="date"] {
-  padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0;
-  border-radius: 8px; font-size: 0.9rem; outline: none;
+  padding: 0.9rem 1.2rem; border: 2px solid #e2e8f0;
+  border-radius: 8px; font-size: 1.35rem; outline: none;
 }
 .date-input {
   flex: 1;
-  padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0;
-  border-radius: 8px; font-size: 0.9rem; outline: none;
+  padding: 0.9rem 1.2rem; border: 2px solid #e2e8f0;
+  border-radius: 8px; font-size: 1.35rem; outline: none;
 }
 .date-input:focus { border-color: #667eea; }
 .date-sep { color: #94a3b8; font-weight: 500; }
 .form-row button {
-  padding: 0.6rem 1.2rem; border: none; border-radius: 8px;
+  padding: 0.9rem 1.8rem; border: none; border-radius: 8px;
   background: #667eea; color: white; font-weight: 600; cursor: pointer;
 }
 
@@ -562,15 +562,15 @@ body {
 .form-stack {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
 }
 .stack-input {
   width: 100%;
-  padding: 0.7rem 0.9rem;
+  padding: 1.05rem 1.35rem;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 1.5rem;
   outline: none;
   background: white;
 }
@@ -580,13 +580,13 @@ select.stack-input {
   appearance: auto;
 }
 .stack-btn {
-  padding: 0.7rem 1.2rem;
+  padding: 1.05rem 1.8rem;
   border: none;
   border-radius: 8px;
   background: #667eea;
   color: white;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 1.5rem;
   cursor: pointer;
 }
 .stack-btn:hover { background: #5a6fd6; }
@@ -594,78 +594,78 @@ select.stack-input {
 
 .search-input {
   flex: 1;
-  padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0;
-  border-radius: 8px; font-size: 0.9rem; outline: none;
+  padding: 0.9rem 1.2rem; border: 2px solid #e2e8f0;
+  border-radius: 8px; font-size: 1.35rem; outline: none;
   min-width: 120px;
 }
 .search-input:focus { border-color: #667eea; }
 .filter-select {
-  padding: 0.6rem 0.8rem; border: 2px solid #e2e8f0;
-  border-radius: 8px; font-size: 0.9rem; outline: none;
+  padding: 0.9rem 1.2rem; border: 2px solid #e2e8f0;
+  border-radius: 8px; font-size: 1.35rem; outline: none;
   background: white; cursor: pointer; min-width: 100px;
 }
 .filter-select:focus { border-color: #667eea; }
 
 /* ---- 加载/空状态 ---- */
-.loading, .empty { text-align: center; padding: 3rem; color: #94a3b8; }
+.loading, .empty { text-align: center; padding: 4.5rem; color: #94a3b8; }
 
 /* ---- 记录卡片 ---- */
-.record-list { display: flex; flex-direction: column; gap: 0.8rem; }
+.record-list { display: flex; flex-direction: column; gap: 1.2rem; }
 .record-card {
-  background: white; border-radius: 12px; padding: 1rem;
+  background: white; border-radius: 12px; padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;
   transition: all 0.2s;
 }
 .record-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
 
 /* 分行字段列表 */
-.record-field-list { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.5rem; }
+.record-field-list { display: flex; flex-direction: column; gap: 0.225rem; margin-bottom: 0.75rem; }
 .record-field-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0.2rem 0; gap: 0.5rem;
+  padding: 0.3rem 0; gap: 0.75rem;
 }
 .record-field-label {
-  font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;
+  font-size: 1.125rem; color: #94a3b8; text-transform: uppercase;
   letter-spacing: 0.04em; font-weight: 500; flex-shrink: 0;
 }
 .record-field-val {
-  font-size: 0.9rem; color: #1e293b; font-weight: 600; text-align: right;
+  font-size: 1.35rem; color: #1e293b; font-weight: 600; text-align: right;
   word-break: break-all;
 }
-.record-title { font-size: 1rem; font-weight: 700; color: #16213e; }
+.record-title { font-size: 1.5rem; font-weight: 700; color: #16213e; }
 .site-badge {
-  background: #e0e7ff; color: #3730a3; padding: 0.1rem 0.4rem;
-  border-radius: 4px; font-size: 0.75rem; font-weight: 700;
+  background: #e0e7ff; color: #3730a3; padding: 0.15rem 0.6rem;
+  border-radius: 4px; font-size: 1.125rem; font-weight: 700;
 }
 
 .record-status {
-  padding: 0.2rem 0.6rem; border-radius: 4px;
-  font-size: 0.75rem; font-weight: 600;
+  padding: 0.3rem 0.9rem; border-radius: 4px;
+  font-size: 1.125rem; font-weight: 600;
 }
 .record-status.confirmed { background: #dcfce7; color: #15803d; }
 .record-status.in_progress { background: #dbeafe; color: #1d4ed8; }
 .record-status.pending { background: #fef3c7; color: #a16207; }
 
-.record-progress { margin-bottom: 0.5rem; }
+.record-progress { margin-bottom: 0.75rem; }
 .progress-bar {
-  height: 8px; background: #f1f5f9; border-radius: 4px;
-  overflow: hidden; margin-bottom: 0.3rem;
+  height: 12px; background: #f1f5f9; border-radius: 4px;
+  overflow: hidden; margin-bottom: 0.45rem;
 }
 .progress-fill {
   height: 100%; background: linear-gradient(90deg, #667eea, #764ba2);
   border-radius: 4px; transition: width 0.3s;
 }
-.record-progress-text { font-size: 0.8rem; color: #64748b; }
+.record-progress-text { font-size: 1.2rem; color: #64748b; }
 .record-time {
   display: flex; justify-content: space-between;
-  font-size: 0.75rem; color: #94a3b8;
+  font-size: 1.125rem; color: #94a3b8;
 }
 
 /* ---- 弹窗 ---- */
 .modal {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
   z-index: 200; display: flex; align-items: center; justify-content: center;
-  padding: 1rem;
+  padding: 1.5rem;
 }
 .modal-content {
   background: white; border-radius: 12px; max-width: 800px;
@@ -673,64 +673,64 @@ select.stack-input {
 }
 .modal-header {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 1rem; border-bottom: 1px solid #f1f5f9;
+  padding: 1.5rem; border-bottom: 1px solid #f1f5f9;
 }
-.modal-header h3 { font-size: 1.1rem; color: #16213e; }
+.modal-header h3 { font-size: 1.65rem; color: #16213e; }
 .modal-header button {
-  background: none; border: none; font-size: 1.2rem;
+  background: none; border: none; font-size: 1.8rem;
   cursor: pointer; color: #94a3b8;
 }
-.modal-body { padding: 1rem; }
-.detail-section { margin-bottom: 1.5rem; }
+.modal-body { padding: 1.5rem; }
+.detail-section { margin-bottom: 2.25rem; }
 .detail-section h4 {
-  font-size: 0.9rem; color: #64748b; margin-bottom: 0.5rem;
+  font-size: 1.35rem; color: #64748b; margin-bottom: 0.75rem;
   text-transform: uppercase; font-weight: 600;
 }
 .detail-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.5rem; font-size: 0.85rem;
+  gap: 0.75rem; font-size: 1.275rem;
 }
-.detail-grid > div { padding: 0.4rem 0; }
-.detail-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.detail-grid > div { padding: 0.6rem 0; }
+.detail-table { width: 100%; border-collapse: collapse; font-size: 1.2rem; }
 .detail-table th {
-  background: #f1f5f9; padding: 0.5rem; text-align: left;
+  background: #f1f5f9; padding: 0.75rem; text-align: left;
   font-weight: 600; color: #475569;
 }
-.detail-table td { padding: 0.5rem; border-bottom: 1px solid #f1f5f9; }
+.detail-table td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; }
 .code-cell {
   font-family: 'Courier New', monospace; font-weight: 600; color: #1d4ed8;
 }
 .badge-done { background: #dcfce7; color: #15803d; }
 .badge-active { background: #dbeafe; color: #1d4ed8; }
 .item-badge {
-  padding: 0.1rem 0.4rem; border-radius: 4px;
-  font-size: 0.7rem; font-weight: 600;
+  padding: 0.15rem 0.6rem; border-radius: 4px;
+  font-size: 1.05rem; font-weight: 600;
 }
-.log-list { display: flex; flex-direction: column; gap: 0.3rem; max-height: 300px; overflow-y: auto; }
+.log-list { display: flex; flex-direction: column; gap: 0.45rem; max-height: 300px; overflow-y: auto; }
 .log-item {
-  display: flex; align-items: center; gap: 0.5rem;
-  padding: 0.4rem 0.6rem; font-size: 0.8rem;
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.6rem 0.9rem; font-size: 1.2rem;
   border-radius: 6px; background: #f8fafc;
 }
 .log-item.success { background: #f0fdf4; }
 .log-item.failed { background: #fef2f2; }
-.log-time { color: #94a3b8; font-size: 0.75rem; min-width: 140px; }
+.log-time { color: #94a3b8; font-size: 1.125rem; min-width: 210px; }
 .log-barcode {
   font-family: 'Courier New', monospace; font-weight: 600;
   color: #1d4ed8; flex: 1;
 }
-.log-status { font-size: 0.9rem; }
-.log-error { color: #dc2626; font-size: 0.75rem; }
+.log-status { font-size: 1.35rem; }
+.log-error { color: #dc2626; font-size: 1.125rem; }
 
 /* ---- 记录操作按钮 ---- */
 .record-status.pending_signature { background: #fef3c7; color: #a16207; }
 .record-status.cancelled { background: #fee2e2; color: #991b1b; }
 .record-actions {
-  display: flex; gap: 0.5rem; margin-top: 0.5rem;
+  display: flex; gap: 0.75rem; margin-top: 0.75rem;
 }
 .action-btn {
-  padding: 0.4rem 0.8rem; border: none; border-radius: 6px;
-  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  padding: 0.6rem 1.2rem; border: none; border-radius: 6px;
+  font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
 }
 .action-scan {
   background: #dbeafe; color: #1d4ed8;
@@ -750,17 +750,17 @@ select.stack-input {
 .action-sign-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ---- 签名弹窗 ---- */
-.sign-form { display: flex; flex-direction: column; gap: 1rem; }
+.sign-form { display: flex; flex-direction: column; gap: 1.5rem; }
 .sign-name-row {
-  display: flex; align-items: center; gap: 0.8rem;
+  display: flex; align-items: center; gap: 1.2rem;
 }
 .sign-name-row label {
-  font-weight: 600; font-size: 0.9rem; color: #475569; white-space: nowrap;
+  font-weight: 600; font-size: 1.35rem; color: #475569; white-space: nowrap;
 }
 .sign-input {
-  flex: 1; padding: 0.6rem 0.8rem;
+  flex: 1; padding: 0.9rem 1.2rem;
   border: 2px solid #e2e8f0; border-radius: 8px;
-  font-size: 0.95rem; outline: none;
+  font-size: 1.425rem; outline: none;
 }
 .sign-input:focus { border-color: #667eea; }
 .sign-pad-wrap {
@@ -768,45 +768,45 @@ select.stack-input {
   background: white;
 }
 .sign-pad-wrap canvas {
-  width: 100%; height: 200px; display: block; touch-action: none;
+  width: 100%; height: 300px; display: block; touch-action: none;
 }
 .sign-actions {
-  display: flex; gap: 0.5rem; justify-content: flex-end;
+  display: flex; gap: 0.75rem; justify-content: flex-end;
 }
 
 /* ---- log 表格 ---- */
-.log-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+.log-table { width: 100%; border-collapse: collapse; font-size: 1.17rem; }
 .log-table th {
-  background: #f1f5f9; padding: 0.4rem 0.5rem;
+  background: #f1f5f9; padding: 0.6rem 0.75rem;
   text-align: left; font-weight: 600; color: #475569;
 }
-.log-table td { padding: 0.4rem 0.5rem; border-bottom: 1px solid #f1f5f9; }
+.log-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f1f5f9; }
 .log-ok td { background: #f0fdf4; }
 .log-fail td { background: #fef2f2; }
 .log-error-cell { color: #dc2626; max-width: 200px; word-break: break-word; }
 
 @media (max-width: 480px) {
-  body { font-size: 14px; }
-  .header { padding: 0.6rem 0.8rem; flex-wrap: wrap; gap: 0.4rem; }
-  .header h1 { font-size: 1rem; }
-  .header nav { gap: 0.15rem; width: 100%; justify-content: flex-end; }
-  .nav-btn { height: 30px; padding: 0 0.5rem; font-size: 0.78rem; }
-  .section { margin: 0.5rem auto; padding: 0 0.5rem; }
+  body { font-size: 18px; }
+  .header { padding: 0.9rem 1.2rem; flex-wrap: wrap; gap: 0.6rem; }
+  .header h1 { font-size: 1.5rem; }
+  .header nav { gap: 0.22rem; width: 100%; justify-content: flex-end; }
+  .nav-btn { height: 42px; padding: 0 0.75rem; font-size: 1.1rem; }
+  .section { margin: 0.75rem auto; padding: 0 0.75rem; }
   .form-row { flex-direction: row; }
-  .date-input { font-size: 0.9rem; padding: 0.5rem 0.6rem; }
-  .stack-input { font-size: 1rem; padding: 0.7rem 0.8rem; }
-  .stack-btn { font-size: 1rem; }
+  .date-input { font-size: 1.35rem; padding: 0.75rem 0.9rem; }
+  .stack-input { font-size: 1.5rem; padding: 1.05rem 1.2rem; }
+  .stack-btn { font-size: 1.5rem; }
   .detail-grid { grid-template-columns: 1fr; }
-  .detail-table { font-size: 0.7rem; }
-  .detail-table th, .detail-table td { padding: 0.3rem 0.4rem; }
-  .log-table { font-size: 0.7rem; }
-  .log-table th, .log-table td { padding: 0.25rem 0.3rem; }
-  .record-card { padding: 0.6rem; }
+  .detail-table { font-size: 1.05rem; }
+  .detail-table th, .detail-table td { padding: 0.45rem 0.6rem; }
+  .log-table { font-size: 1.05rem; }
+  .log-table th, .log-table td { padding: 0.375rem 0.45rem; }
+  .record-card { padding: 0.9rem; }
   .modal-content { max-height: 90vh; }
 }
 
 @media (max-width: 360px) {
-  body { font-size: 13px; }
-  .header h1 { font-size: 0.9rem; }
+  body { font-size: 16px; }
+  .header h1 { font-size: 1.35rem; }
 }
 </style>
