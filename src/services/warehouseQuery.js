@@ -73,7 +73,7 @@ async function getShippingNoticeById(id) {
 
 /**
  * 获取出货通知的明细品项
- * 根据 package_number 计算每个品项的计划箱数
+ * Location 从 SLPickListLocs 表获取（同一 Sequence 多行用逗号拼接）
  */
 async function getShippingNoticeItems(id) {
   const pool = await getPool();
@@ -81,27 +81,32 @@ async function getShippingNoticeItems(id) {
     .input('id', sql.Int, parseInt(id))
     .query(`
       SELECT 
-        Sequence AS sequence,
-        RefNum AS ref_num,
-        RefLineSuf AS ref_line_suf,
-        RefRelease AS ref_release,
-        Job_Order AS wo_number,
-        Location AS location,
-        item AS item_code,
-        description AS item_name,
-        QtyToPick AS qty_to_pick,
-        um,
-        package_number AS planned_boxes,
-        package_piece_per_box,
-        cust_po_num,
-        cust_po_line,
-        customer_item,
-        package_Type AS package_type,
-        drawing_nbr,
-        customs_hs_code
-      FROM dbo.SLPickListRefs
-      WHERE PickListId = @id
-      ORDER BY Sequence
+        r.Sequence AS sequence,
+        r.RefNum AS ref_num,
+        r.RefLineSuf AS ref_line_suf,
+        r.RefRelease AS ref_release,
+        r.Job_Order AS wo_number,
+        ISNULL(l.locations, '') AS location,
+        r.item AS item_code,
+        r.description AS item_name,
+        r.QtyToPick AS qty_to_pick,
+        r.um,
+        r.package_number AS planned_boxes,
+        r.package_piece_per_box,
+        r.cust_po_num,
+        r.cust_po_line,
+        r.customer_item,
+        r.package_Type AS package_type,
+        r.drawing_nbr,
+        r.customs_hs_code
+      FROM dbo.SLPickListRefs r
+      OUTER APPLY (
+        SELECT STRING_AGG(LTRIM(RTRIM(l.Loc)), ', ') WITHIN GROUP (ORDER BY l.Loc) AS locations
+        FROM dbo.SLPickListLocs l
+        WHERE l.PickListId = r.PickListId AND l.Sequence = r.Sequence
+      ) l
+      WHERE r.PickListId = @id
+      ORDER BY r.Sequence
     `);
   return result.recordset;
 }

@@ -57,21 +57,31 @@
     <div class="record-list" x-show="!loading && records.length > 0">
       <template x-for="(record, idx) in records" :key="idx">
         <div class="record-card" @click="showDetail(record.id)">
-          <div class="record-header">
-            <div class="record-title">
-              PickList #<span x-text="record.pick_list_id"></span>
+          <div class="record-field-list">
+            <div class="record-field-row">
+              <span class="record-field-label">PickList</span>
+              <span class="record-field-val record-title">#<span x-text="record.pick_list_id"></span></span>
             </div>
-            <span class="record-status" :class="record.status">
-              <template x-if="record.status === 'confirmed'" x-text="t('done')"></template>
-              <template x-if="record.status === 'in_progress'" x-text="t('inProgress')"></template>
-              <template x-if="record.status === 'pending'" x-text="t('pending')"></template>
-              <template x-if="record.status === 'pending_signature'" x-text="t('awaitingSign')"></template>
-              <template x-if="record.status === 'cancelled'" x-text="t('cancelled')"></template>
-            </span>
-          </div>
-          <div class="record-meta">
-            <span class="site-badge" x-text="record.site_ref"></span>
-            <span x-text="record.cust_name"></span>
+            <div class="record-field-row">
+              <span class="record-field-label" x-text="t('customer')"></span>
+              <span class="record-field-val" x-text="record.cust_name"></span>
+            </div>
+            <div class="record-field-row">
+              <span class="record-field-label" x-text="t('site')"></span>
+              <span class="record-field-val"><span class="site-badge" x-text="record.site_ref"></span></span>
+            </div>
+            <div class="record-field-row">
+              <span class="record-field-label" x-text="t('status')"></span>
+              <span class="record-field-val">
+                <span class="record-status" :class="record.status">
+                  <template x-if="record.status === 'confirmed'" x-text="t('done')"></template>
+                  <template x-if="record.status === 'in_progress'" x-text="t('inProgress')"></template>
+                  <template x-if="record.status === 'pending'" x-text="t('pending')"></template>
+                  <template x-if="record.status === 'pending_signature'" x-text="t('awaitingSign')"></template>
+                  <template x-if="record.status === 'cancelled'" x-text="t('cancelled')"></template>
+                </span>
+              </span>
+            </div>
           </div>
           <div class="record-progress">
             <div class="progress-bar">
@@ -572,10 +582,27 @@ body {
   transition: all 0.2s;
 }
 .record-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-.record-header {
-  display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;
+
+/* 分行字段列表 */
+.record-field-list { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.5rem; }
+.record-field-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.2rem 0; gap: 0.5rem;
 }
-.record-title { font-size: 1.1rem; font-weight: 700; color: #16213e; }
+.record-field-label {
+  font-size: 0.75rem; color: #94a3b8; text-transform: uppercase;
+  letter-spacing: 0.04em; font-weight: 500; flex-shrink: 0;
+}
+.record-field-val {
+  font-size: 0.9rem; color: #1e293b; font-weight: 600; text-align: right;
+  word-break: break-all;
+}
+.record-title { font-size: 1rem; font-weight: 700; color: #16213e; }
+.site-badge {
+  background: #e0e7ff; color: #3730a3; padding: 0.1rem 0.4rem;
+  border-radius: 4px; font-size: 0.75rem; font-weight: 700;
+}
+
 .record-status {
   padding: 0.2rem 0.6rem; border-radius: 4px;
   font-size: 0.75rem; font-weight: 600;
@@ -584,14 +611,6 @@ body {
 .record-status.in_progress { background: #dbeafe; color: #1d4ed8; }
 .record-status.pending { background: #fef3c7; color: #a16207; }
 
-.record-meta {
-  display: flex; align-items: center; gap: 0.5rem;
-  font-size: 0.85rem; color: #475569; margin-bottom: 0.5rem;
-}
-.site-badge {
-  background: #e0e7ff; color: #3730a3; padding: 0.1rem 0.4rem;
-  border-radius: 4px; font-size: 0.75rem; font-weight: 700;
-}
 .record-progress { margin-bottom: 0.5rem; }
 .progress-bar {
   height: 8px; background: #f1f5f9; border-radius: 4px;
