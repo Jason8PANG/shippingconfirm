@@ -1,7 +1,7 @@
 <div id="app" x-data="scannerApp()" x-init="init()">
   
-  <!-- 顶部导航 -->
-  <header class="header">
+  <!-- 顶部导航（sticky，QR 扫描框也在里面） -->
+  <header class="header" :class="{ 'has-qr-bar': confirmationId && confirmation?.status !== 'confirmed' && confirmation?.status !== 'pending_signature' }">
     <nav>
       <!-- Back button (only visible during verify) -->
       <button class="nav-btn nav-back" x-show="confirmationId" @click="backToNotice()">
@@ -13,6 +13,19 @@
         <span x-text="lang === 'en' ? '🇨🇳 中文' : '🇬🇧 English'"></span>
       </a>
     </nav>
+    <!-- 扫码输入区（嵌入 header，跟随 sticky 固定在顶部） -->
+    <div class="scan-control-bar" x-show="confirmationId && confirmation?.status !== 'confirmed' && confirmation?.status !== 'pending_signature'">
+      <input type="text" 
+             x-ref="qrInput" 
+             x-model="scanQR" 
+             @keyup.enter="doQRScan()"
+             :placeholder="t('qrPlaceholder')"
+             class="qr-input"
+             autocomplete="off"
+             autocorrect="off"
+             autocapitalize="off"
+             spellcheck="false">
+    </div>
   </header>
 
   <!-- 查询出货通知（比对模式下隐藏） -->
@@ -90,20 +103,6 @@
   <!-- 比对界面 -->
   <section class="section" id="scan-section" x-show="confirmationId" x-cloak>
     
-    <!-- 扫描输入区（sticky 固定屏幕最上方） -->
-    <div class="scan-control-bar" x-show="confirmation?.status !== 'confirmed' && confirmation?.status !== 'pending_signature'">
-      <input type="text" 
-             x-ref="qrInput" 
-             x-model="scanQR" 
-             @keyup.enter="doQRScan()"
-             :placeholder="t('qrPlaceholder')"
-             class="qr-input"
-             autocomplete="off"
-             autocorrect="off"
-             autocapitalize="off"
-             spellcheck="false">
-    </div>
-
     <!-- 状态头部 -->
     <div class="status-header" :class="{ 'status-completed': confirmation?.status === 'confirmed' || confirmation?.status === 'pending_signature' }">
       <div class="status-title">
@@ -303,7 +302,7 @@ const translations = {
     colPartNo: 'Part No',
     colQty: 'Qty',
     colCartons: 'Cartons',
-    startConfirm: '🚀 Start Verify',
+    startConfirm: '🚀 Start',
     starting: '⏳ Starting...',
     cancel: 'Cancel',
 
@@ -352,7 +351,7 @@ const translations = {
     backToNotice: 'Back',
     backHint: 'Progress is saved, you can resume later',
     resumeTitle: 'This notice has unfinished verification progress',
-    resumeConfirm: '▶️ Resume Verify',
+    resumeConfirm: '▶️ Resume',
     restartConfirm: '🔄 Restart',
   },
   zh: {
@@ -379,7 +378,7 @@ const translations = {
     colPartNo: '料号',
     colQty: '数量',
     colCartons: '箱数',
-    startConfirm: '🚀 开始比对',
+    startConfirm: '🚀 开始',
     starting: '⏳ 启动中...',
     cancel: '取消',
     compareTitle: '比对明细',
@@ -420,7 +419,7 @@ const translations = {
     backToNotice: '返回',
     backHint: '进度已保存，可稍后继续',
     resumeTitle: '该出货通知有未完成的比对进度',
-    resumeConfirm: '▶️ 继续比对',
+    resumeConfirm: '▶️ 继续',
     restartConfirm: '🔄 重新开始',
   },
 };
@@ -1165,14 +1164,9 @@ button:disabled {
 .text-yellow { color: #b45309; }
 .text-red { color: #dc2626; }
 
-/* ---- 扫码控制栏（sticky 固定最上方） ---- */
+/* ---- 扫码控制栏（嵌入 header 内，随 header sticky 固定顶部） ---- */
 .scan-control-bar {
-  position: sticky;
-  top: 0;
-  z-index: 99;
-  background: #f0f2f5;
-  padding: 0.75rem 0;
-  margin: 0;
+  padding: 0.6rem 0 0 0;
 }
 .scan-control-bar .qr-input {
   width: 100%;
@@ -1183,6 +1177,7 @@ button:disabled {
   outline: none;
   font-family: 'Courier New', monospace;
   box-shadow: 0 2px 8px rgba(102,126,234,0.15);
+  background: #fff;
 }
 .scan-control-bar .qr-input:focus {
   border-color: #764ba2;
