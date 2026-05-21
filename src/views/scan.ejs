@@ -141,8 +141,8 @@
       <template x-if="lastScanResult?.success">
         <div>
           ✅ <span x-text="t('scanSuccess')"></span>
-          <span x-text="' — ' + t('wo') + ': ' + lastScanResult.wo + ', ' + t('qty') + ': ' + lastScanResult.scanned_qty"></span>
-          <span x-show="lastScanResult.over_qty" class="over-qty-warn"> ⚠️ <span x-text="t('overQty')"></span></span>
+          <span x-text="' — ' + t('wo') + ': ' + (lastScanResult?.wo || '-') + ', ' + t('qty') + ': ' + (lastScanResult?.scanned_qty || 0)"></span>
+          <span x-show="lastScanResult?.over_qty" class="over-qty-warn"> ⚠️ <span x-text="t('overQty')"></span></span>
           <div class="scan-detail">
             <span x-text="t('verifiedRows') + ': ' + (lastScanResult.summary?.verifiedRows || 0) + '/' + (lastScanResult.summary?.totalRows || 0)"></span>
             <span x-text="' | ' + t('totalVerifiedQty') + ': ' + (lastScanResult.summary?.totalScannedQty || 0)"></span>
