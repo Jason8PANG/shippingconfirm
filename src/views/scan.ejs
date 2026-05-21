@@ -152,7 +152,7 @@
       <template x-if="!lastScanResult?.success">
         <div>
           ❌ <span x-text="lastScanResult?.error || t('scanFailed')"></span>
-          <span x-show="lastScanResult?.wo" x-text="' — ' + t('wo') + ': ' + lastScanResult.wo"></span>
+          <span x-show="lastScanResult?.wo" x-text="' — ' + t('wo') + ': ' + (lastScanResult?.wo || '-')"></span>
         </div>
       </template>
     </div>
