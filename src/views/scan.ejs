@@ -2,8 +2,11 @@
   
   <!-- 顶部导航 -->
   <header class="header">
-    <h1>📦 <span x-text="t('siteTitle')"></span></h1>
     <nav>
+      <!-- Back button (only visible during verify) -->
+      <button class="nav-btn nav-back" x-show="confirmationId" @click="backToNotice()">
+        ← <span x-text="t('backToNotice')"></span>
+      </button>
       <a href="/" class="nav-btn nav-active"><span x-text="t('navScan')"></span></a>
       <a href="/history" class="nav-btn"><span x-text="t('navHistory')"></span></a>
       <a href="#" @click.prevent="toggleLang()" class="nav-btn lang-btn">
@@ -12,8 +15,8 @@
     </nav>
   </header>
 
-  <!-- 查询出货通知 -->
-  <section class="section" id="search-section">
+  <!-- 查询出货通知（比对模式下隐藏） -->
+  <section class="section" id="search-section" x-show="!confirmationId">
     <h2 x-text="t('searchTitle')"></h2>
     <div class="form-row">
       <input type="text" x-model="searchInput" @keyup.enter="searchNotice()" 
@@ -34,7 +37,7 @@
   </section>
 
   <!-- 出货通知详情 + 确认启动 -->
-  <section class="section" id="notice-section" x-show="notice" x-cloak>
+  <section class="section" id="notice-section" x-show="notice && !confirmationId" x-cloak>
     <div class="notice-card">
       <div class="notice-header">
         <h3>PickList #<span x-text="notice?.PickListId"></span></h3>
@@ -87,12 +90,18 @@
   <!-- 比对界面 -->
   <section class="section" id="scan-section" x-show="confirmationId" x-cloak>
     
-    <!-- 返回按钮 -->
-    <div class="back-row" x-show="confirmationId">
-      <button class="btn-back" @click="backToNotice()">
-        ← <span x-text="t('backToNotice')"></span>
-      </button>
-      <span class="back-hint" x-text="t('backHint')"></span>
+    <!-- 扫描输入区（sticky 固定屏幕最上方） -->
+    <div class="scan-control-bar" x-show="confirmation?.status !== 'confirmed' && confirmation?.status !== 'pending_signature'">
+      <input type="text" 
+             x-ref="qrInput" 
+             x-model="scanQR" 
+             @keyup.enter="doQRScan()"
+             :placeholder="t('qrPlaceholder')"
+             class="qr-input"
+             autocomplete="off"
+             autocorrect="off"
+             autocapitalize="off"
+             spellcheck="false">
     </div>
 
     <!-- 状态头部 -->
@@ -101,38 +110,6 @@
         <span x-show="confirmation?.status !== 'confirmed' && confirmation?.status !== 'pending_signature'" x-text="t('verifying')"></span>
         <span x-show="confirmation?.status === 'pending_signature'" x-text="t('pendingSignature')"></span>
         <span x-show="confirmation?.status === 'confirmed'" x-text="t('completed')"></span>
-      </div>
-    </div>
-
-    <!-- 扫描输入区：工单 + 数量 -->
-    <div class="scan-input-area" x-show="confirmation?.status !== 'confirmed' && confirmation?.status !== 'pending_signature'">
-      <div class="scan-row">
-        <div class="scan-field">
-          <label x-text="t('woLabel')"></label>
-          <input type="text" 
-                 x-ref="woInput" 
-                 x-model="scanWO" 
-                 @keyup.enter="onWoEnter()"
-                 :placeholder="t('woPlaceholder')"
-                 class="scan-input"
-                 autocomplete="off"
-                 autocorrect="off"
-                 autocapitalize="off"
-                 spellcheck="false">
-        </div>
-        <div class="scan-field">
-          <label x-text="t('qtyLabel')"></label>
-          <input type="text" 
-                 x-ref="qtyInput" 
-                 x-model="scanQty" 
-                 @keyup.enter="doScan()"
-                 :placeholder="t('qtyPlaceholder')"
-                 class="scan-input"
-                 autocomplete="off"
-                 autocorrect="off"
-                 autocapitalize="off"
-                 spellcheck="false">
-        </div>
       </div>
     </div>
 
@@ -345,6 +322,7 @@ const translations = {
     // scanning
     verifying: '🔍 Verifying...',
     completed: '✅ Confirmation Complete!',
+    qrPlaceholder: '📷 Scan QR code...',
     wo: 'WO',
     qty: 'Qty',
     woLabel: 'Work Order',
@@ -416,6 +394,7 @@ const translations = {
     total: '合计',
     verifying: '🔍 比对中...',
     completed: '✅ 确认完成！',
+    qrPlaceholder: '📷 扫描二维码...',
     wo: '工单',
     qty: '数量',
     woLabel: '工单号',
@@ -475,8 +454,7 @@ function scannerApp() {
 
     confirmationId: null,
     confirmation: null,
-    scanWO: '',
-    scanQty: '',
+    scanQR: '',
     qtyMismatch: false,
     summary: null,
 
@@ -671,7 +649,7 @@ function scannerApp() {
       this.confirmationId = confirmationId;
       this.inProgressId = null;
       this.$nextTick(() => {
-        if (this.$refs.woInput) this.$refs.woInput.focus();
+        if (this.$refs.qrInput) this.$refs.qrInput.focus();
       });
       this.socket.emit('join-confirmation', confirmationId);
       if (this._scanResultHandler) this.socket.off('scan-result', this._scanResultHandler);
@@ -694,39 +672,47 @@ function scannerApp() {
       }
       this.confirmationId = null;
       this.confirmation = null;
-      this.scanWO = '';
-      this.scanQty = '';
+      this.scanQR = '';
       this.lastScanResult = null;
       this.qtyMismatch = false;
       this.summary = null;
       this.showSignModal = false;
     },
 
-    onWoEnter() {
-      // 工单回车 → 焦点跳到数量框
-      if (this.scanWO.trim()) {
-        this.$nextTick(() => {
-          if (this.$refs.qtyInput) this.$refs.qtyInput.focus();
-        });
-      }
+    parseQRData(text) {
+      // Parse QR code text like: CUST. P/N:G8020-60091;...WO:J000032579;QUANTITY:15;...PACKING COUNT:OF
+      const woMatch = text.match(/WO:([^;]+)/i);
+      const qtyMatch = text.match(/QUANTITY:([^;]+)/i);
+      return {
+        wo: woMatch ? woMatch[1].trim() : null,
+        quantity: qtyMatch ? qtyMatch[1].trim() : null,
+      };
     },
 
-    doScan() {
-      const wo = this.scanWO.trim();
-      const qty = this.scanQty.trim();
-      if (!wo || !qty || !this.confirmationId) return;
+    doQRScan() {
+      const qrText = this.scanQR.trim();
+      if (!qrText || !this.confirmationId) return;
+
+      const parsed = this.parseQRData(qrText);
+      if (!parsed.wo || !parsed.quantity) {
+        this.lastScanResult = { success: false, error: this.lang === 'zh' ? '无法识别二维码，请重试' : 'Cannot parse QR code, please try again' };
+        if (this.feedbackTimer) clearTimeout(this.feedbackTimer);
+        this.feedbackTimer = setTimeout(() => { this.lastScanResult = null; }, 3000);
+        this.scanQR = '';
+        this.$nextTick(() => { if (this.$refs.qrInput) this.$refs.qrInput.focus(); });
+        return;
+      }
 
       this.socket.emit('scan-barcode', { 
         confirmationId: this.confirmationId, 
-        woNumber: wo, 
-        quantity: qty 
+        woNumber: parsed.wo, 
+        quantity: parsed.quantity 
       });
 
-      // 清空输入，焦点回到工单框
-      this.scanWO = '';
-      this.scanQty = '';
+      // 清空输入，焦点保持在扫码框
+      this.scanQR = '';
       this.$nextTick(() => {
-        if (this.$refs.woInput) this.$refs.woInput.focus();
+        if (this.$refs.qrInput) this.$refs.qrInput.focus();
       });
     },
 
@@ -904,8 +890,7 @@ function scannerApp() {
       this.items = [];
       this.confirmationId = null;
       this.confirmation = null;
-      this.scanWO = '';
-      this.scanQty = '';
+      this.scanQR = '';
       this.qtyMismatch = false;
       this.summary = null;
       this.lastScanResult = null;
@@ -981,6 +966,17 @@ body {
 .nav-btn.nav-active {
   color: white;
   background: rgba(255,255,255,0.2);
+}
+
+.nav-back {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
+  font-weight: 600;
+  font-size: 1.2rem;
+  cursor: pointer;
+  height: 51px;
+  padding: 0 0.9rem;
 }
 
 .lang-btn {
@@ -1169,49 +1165,28 @@ button:disabled {
 .text-yellow { color: #b45309; }
 .text-red { color: #dc2626; }
 
-/* ---- 扫码输入区 ---- */
-.scan-input-area {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  border: 2px solid #667eea;
+/* ---- 扫码控制栏（sticky 固定最上方） ---- */
+.scan-control-bar {
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  background: #f0f2f5;
+  padding: 0.75rem 0;
+  margin: 0;
 }
-
-.scan-row {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.scan-field {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.scan-field label {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.scan-input {
+.scan-control-bar .qr-input {
   width: 100%;
-  padding: 1.2rem;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
+  padding: 1.35rem 1.5rem;
+  border: 2px solid #667eea;
+  border-radius: 10px;
   font-size: 1.65rem;
   outline: none;
   font-family: 'Courier New', monospace;
+  box-shadow: 0 2px 8px rgba(102,126,234,0.15);
 }
-
-.scan-input:focus {
-  border-color: #667eea;
+.scan-control-bar .qr-input:focus {
+  border-color: #764ba2;
+  box-shadow: 0 2px 12px rgba(118,75,162,0.25);
 }
 
 /* ---- 扫码反馈 ---- */
@@ -1401,36 +1376,6 @@ button:disabled {
   border: 1px solid #fcd34d;
 }
 
-/* ---- 返回按钮 ---- */
-.back-row {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  margin-bottom: 1.2rem;
-}
-
-.btn-back {
-  padding: 0.75rem 1.5rem;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 1.35rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-back:hover {
-  background: #e2e8f0;
-  color: #1e293b;
-}
-
-.back-hint {
-  font-size: 1.17rem;
-  color: #94a3b8;
-}
-
 /* ---- 重新开始按钮 ---- */
 .btn-danger {
   background: #fee2e2 !important;
@@ -1616,8 +1561,7 @@ button:disabled {
   .status-title { font-size: 1.425rem; }
   .summary-row { font-size: 1.125rem; gap: 0.9rem; }
   .summary-value { font-size: 1.275rem; }
-  .scan-row { flex-direction: column; gap: 0.6rem; }
-  .scan-input { font-size: 1.425rem; padding: 0.9rem; }
+  .scan-control-bar .qr-input { font-size: 1.425rem; padding: 1.05rem; }
   .btn-primary { padding: 1.05rem 1.5rem !important; font-size: 1.35rem !important; }
   .scan-feedback { padding: 0.9rem 1.2rem; }
   .form-row { flex-direction: column; }
