@@ -34,7 +34,13 @@
     <h2 x-text="t('searchTitle')"></h2>
     <div class="form-row">
       <input type="text" x-model="searchInput" @keyup.enter="searchNotice()" 
-             :placeholder="t('searchPlaceholder')">
+             :placeholder="t('searchPlaceholder')"
+             inputmode="none"
+             autocomplete="off"
+             autocorrect="off"
+             autocapitalize="off"
+             spellcheck="false"
+             style="caret-color:transparent;user-select:none;-webkit-user-select:none;">
       <button @click="searchNotice()" :disabled="searching">
         <span x-show="!searching" x-text="t('searchBtn')"></span>
         <span x-show="searching" x-text="t('searching')"></span>
