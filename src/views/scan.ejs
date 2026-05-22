@@ -687,8 +687,10 @@ function scannerApp() {
 
     parseQRData(text) {
       // Parse QR code text like: CUST. P/N:G8020-60091;...WO:J000032579;QUANTITY:15;...PACKING COUNT:OF
-      const woMatch = text.match(/WO:([^;]+)/i);
-      const qtyMatch = text.match(/QUANTITY:([^;]+)/i);
+      // Strip all invisible control chars except printable ones, normalize semicolons
+      const clean = text.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g, '').replace(/\t/g, ' ');
+      const woMatch = clean.match(/WO\s*:\s*([^;]+)/i);
+      const qtyMatch = clean.match(/QUANTITY\s*:\s*([^;]+)/i);
       return {
         wo: woMatch ? woMatch[1].trim() : null,
         quantity: qtyMatch ? qtyMatch[1].trim() : null,
